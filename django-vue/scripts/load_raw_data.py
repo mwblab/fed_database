@@ -1,4 +1,4 @@
-from auto.models import Mouse, FedDataRaw
+from auto.models import Mouse, FedDataRaw, Fed
 from datetime import datetime
 from django.utils import timezone
 import pandas as pd
@@ -8,24 +8,61 @@ import os
 
 def run():
 
+    #given cohort id
+    cohort_id = 1
+
     # loop through target dir
     day_dir = "./d21"   
     dirs = os.listdir( day_dir )
 
     # for each csv
-    # get fed number, date, cohortID, studyID, mouseID
     for file in dirs:
+
         # check if size >0, with csv extension
         split_tup = os.path.splitext(file)
 
         file_fp = os.path.join(day_dir,file)
         fs = os.stat(file_fp)
         if fs.st_size > 0 and split_tup[1].lower() == ".csv":
+            # debug
             print(file_fp)
-            import_fed_csv(file_fp)
+
+            # get mouse 
+            ret_mouse = get_mouse_obj(file_fp, cohort_id)
+            
+            # import csv
+            import_fed_csv(file_fp, ret_mouse)
 
 
-def import_fed_csv(csv_path):
+def get_mouse_obj(csv_path, cohort_id):
+    f = pd.read_csv(csv_path)
+    r = f.iloc[0,:]
+    devNum = r[1]
+            
+    try:
+        #q = Mouse.objects.select_related('fed').get(fedDisplayName = "FED%03d" % devNum )
+        ret_fed = Fed.objects.get(fedDisplayName = "FED%03d" % devNum, cohort_id = cohort_id)
+        ret_mouse = Mouse.objects.get(fed=ret_fed)
+        return ret_mouse
+    except Fed.DoesNotExist as err: 
+        # insert new fed and ini new mouse
+        new_fed = Fed(cohort_id = cohort_id, fedDisplayName = "FED%03d" % devNum)
+        new_fed.save()
+
+        new_mouse = Mouse( mouseDisplayName="Cage.Animal", genotype="", fed=new_fed, dob=timezone.make_aware(datetime.now()) )
+        new_mouse.save()
+        return new_mouse
+    except Mouse.DoesNotExist as err:
+        new_mouse = Mouse( mouseDisplayName="Cage.Animal", genotype="", fed=ret_fed, dob=timezone.make_aware(datetime.now()) )
+        new_mouse.save()
+        return new_mouse
+    except Exception as err:
+        print(f"Unexpected {err=}, {type(err)=}")
+        raise
+
+
+
+def import_fed_csv(csv_path, ret_mouse):
 
     f = pd.read_csv(csv_path)
 
@@ -56,7 +93,7 @@ def import_fed_csv(csv_path):
             rt = int(rt)
         
         m = Mouse.objects.get(pk=1)
-        fd = FedDataRaw(actTimestamp=str2datetime(r[0]), deviceNumber=r[1], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=m)
+        fd = FedDataRaw(actTimestamp=str2datetime(r[0]), deviceNumber=r[1], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
         fd.save()
 
 
