@@ -1,6 +1,7 @@
-from auto.models import Mouse, FedDataRaw, FedDataByHour, FedDataByDay, Cohort
+from auto.models import Mouse, FedDataRaw, FedDataByHour, FedDataByDay, Cohort, FedDataRolling
 from datetime import datetime, date, timedelta
 from django.utils import timezone
+from django.db.models import Avg, F, RowRange, Window
 
 def run():
 
@@ -9,17 +10,18 @@ def run():
     d = date(year=2022, month=3, day=26)
 
     # count day since start
-    q = Cohort.objects.filter(fed__mouse__id=m.id)
-    delta_day = d - q[0].startDate
+    #q = Cohort.objects.filter(fed__mouse__id=m.id)
+    #delta_day = d - q[0].startDate
 
     # cal by Hour, by Day results and save into tables
     # given one day, one mouse
-    cal_hr_day(m, d, delta_day.days) 
+    #cal_hr_day(m, d) 
 
     # cal by Poke result and save into table
-    #cal_poke()
+    #cal_rolling_avg(m, d)
+    #cal_rolling(m, d, 30)
 
-def cal_hr_day(m, d, ddays):
+def cal_hr_day(m, d):
     qs = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d)
 
     # get active poke
@@ -49,7 +51,7 @@ def cal_hr_day(m, d, ddays):
             raise Exception("Invalid active_poke code.") 
 
         # insert into db
-        fedhr = FedDataByHour(leftPokeCount=cur_l, rightPokeCount=cur_r, pelletCount=cur_p, activePoke=active_poke, pokeAcc=poke_acc, startTime=onset_timestamp+timedelta(hours=hr), endTime=onset_timestamp+timedelta(hours=hr+1), numHour=hr+1, fedDate=d, fedDaySinceCohortStart=ddays, mouse=m)
+        fedhr = FedDataByHour(leftPokeCount=cur_l, rightPokeCount=cur_r, pelletCount=cur_p, activePoke=active_poke, pokeAcc=poke_acc, startTime=onset_timestamp+timedelta(hours=hr), endTime=onset_timestamp+timedelta(hours=hr+1), numHour=hr+1, fedDate=d, mouse=m)
         fedhr.save()
 
         # update pre_l, pre_r, pre_p 
@@ -69,11 +71,64 @@ def cal_hr_day(m, d, ddays):
             else:
                 raise Exception("Invalid active_poke code.") 
 
-            fedday = FedDataByDay(leftPokeCount=qs_hr_last.leftPokeCount, rightPokeCount=qs_hr_last.rightPokeCount, pelletCount=qs_hr_last.pelletCount, activePoke=active_poke, pokeAcc=poke_acc, fedDate=d, fedDaySinceCohortStart=ddays, mouse=m)
+            fedday = FedDataByDay(leftPokeCount=qs_hr_last.leftPokeCount, rightPokeCount=qs_hr_last.rightPokeCount, pelletCount=qs_hr_last.pelletCount, activePoke=active_poke, pokeAcc=poke_acc, fedDate=d, mouse=m)
             fedday.save()
- 
-#def cal_poke(mouse, cal_timestamp):
+
+def cal_rolling_avg(m, d):
+    qs = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d)
+
+    # get active poke
+    active_poke = qs[0].activePoke  
+
+    # get onset time
+    total_qs = len(qs)
+    onset_index = 16
+    for i in range(len(qs)):
+        if qs[onset_index+i].event == 2:
+            continue
+        else:
+            onset_index = onset_index+i
+            break
+    onset_time = qs[onset_index].actTimestamp
+
+    qs_poke = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d, event=1, actTimestamp__gte=onset_time)
+    #print(len(qs_poke))
+
+    #count qs_acc
+    for i in range(len(qs_poke)):
+        lc = qs_poke[i].leftPokeCount
+        rc = qs_poke[i].rightPokeCount
+        ts = qs_poke[i].actTimestamp
+
+        poke_acc=0;
+        if lc+rc == 0:
+            poke_acc=0;
+        elif active_poke == 1: # left
+            poke_acc = lc / (lc+rc)
+        elif active_poke == 2: #right
+            poke_acc = rc / (lc+rc)
+        else:
+            raise Exception("Invalid active_poke code.") 
+
+        fdr = FedDataRolling(pokeAcc=poke_acc, windowSize=1, startTime=ts, endTime=ts, fedDate=d, mouse=m)
+        fdr.save()
 
 
+def cal_rolling(m, d, win_size):
+    #start rolling
+    #https://stackoverflow.com/questions/48790322/fast-moving-average-computation-with-django-orm
+    items = FedDataRolling.objects.filter(windowSize=1, mouse=m, fedDate=d).annotate(
+            avg=Window(
+                expression=Avg('pokeAcc'), 
+                order_by=F('id').asc(), 
+                frame=RowRange(start=(0-win_size+1),end=0)
+                )
+            )
+
+    #print(items[29].avg)
+    for i in range(win_size-1, len(items)):
+        avg = items[i].avg
+        fdr = FedDataRolling(pokeAcc=avg, windowSize=win_size, startTime=items[i-(win_size-1)].startTime, endTime=items[i].startTime, fedDate=d,mouse=m)
+        fdr.save()
 
 
