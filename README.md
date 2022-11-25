@@ -20,6 +20,8 @@
 
 # create data migration
 
+# https://docs.djangoproject.com/en/4.1/howto/initial-data/
+
 `python manage.py makemigrations --empty auto`
 
 
