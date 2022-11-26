@@ -1,9 +1,12 @@
 # automice
 
 
-## run dev server
+## run dev RESTful server
 
-`python manage.py runserver 0.0.0.0:5000`
+`python manage.py runserver 0.0.0.0:3000`
+
+available port: 3000, 5000
+3000 for RESTful, 5000 for vue
 
 ## run vue dev server
 
@@ -11,7 +14,9 @@
 
 `npm run dev`
 
-update host, port in frontend/config/index.js 
+run on port 5000
+
+you can update host, port in frontend/config/index.js 
 
 ## django dev
 
