@@ -1,21 +1,55 @@
 
 <template>
+
     <div class="studies_container">
+        <VueFileAgent
+          ref="vueFileAgent"
+          :theme="'list'"
+          :multiple="true"
+          :deletable="false"
+          :meta="true"
+          :accept="'.csv'"
+          :maxSize="'500MB'"
+          :maxFiles="50"
+          :helpText="'Choose fed raw csv files. Can be multiple day (as long as the dates in csv files is correct).'"
+          :errorText="{
+            type: 'Invalid file type. Only csv Allowed',
+            size: 'Files should not exceed 500MB in size',
+          }"
+          @select="filesSelected($event)"
+          v-model="fileRecords"
+        ></VueFileAgent>
+        <button :disabled="!fileRecordsForUpload.length" @click="uploadFiles()">
+          Upload {{ fileRecordsForUpload.length }} files
+        </button>
+
+        <div class="cohort_upload_raw">
+            <form v-on:submit.prevent="uploadRaw">
+              <div class="form-group">
+                  <label for="cohort_id">Cohort ID</label>
+                  <input type="text" class="form-control" id="title" v-model="cohort_id">
+              </div>
+              <div class="form-group">
+                  <button type="submit">Upload Raw Files</button>
+              </div>
+            </form>
+        </div>
+
         <div class="add_study">
             <form v-on:submit.prevent="submitForm">
-                <div class="form-group">
-                <label for="title">Title</label>
-                <input type="text" class="form-control" id="title" v-model="title">
-            </div>
-            <div class="form-group">
-                <label for="description">Description</label>
-                <textarea class="form-control" id="description" v-model="description"></textarea>
-            </div>
-            <div class="form-group">
-                <button type="submit">Add Study</button>
-            </div>
-        </form>
-    </div>
+              <div class="form-group">
+                  <label for="title">Title</label>
+                  <input type="text" class="form-control" id="title" v-model="title">
+              </div>
+              <div class="form-group">
+                  <label for="description">Description</label>
+                  <textarea class="form-control" id="description" v-model="description"></textarea>
+              </div>
+              <div class="form-group">
+                  <button type="submit">Add Study</button>
+              </div>
+            </form>
+        </div>
 
         <div class="studies_content">
             <h1>Studies</h1>
@@ -43,7 +77,12 @@ export default {
     return {
       studies: [''],
       title: '',
-      description: ''
+      description: '',
+      cohort_id: 0,
+      fileRecords: [],
+      uploadUrl: 'http://128.173.224.170:3000/api/files/',
+      // uploadHeaders: { 'X-Test-Header': 'vue-file-agent' },
+      fileRecordsForUpload: [] // maintain an upload queue
     }
   },
   methods: {
@@ -102,6 +141,43 @@ export default {
         })
       } catch (error) {
         console.log(error)
+      }
+    },
+    // for uploader
+    uploadFiles: function () {
+      // Using the default uploader. You may use another uploader instead.
+      this.$refs.vueFileAgent.upload(this.uploadUrl, this.uploadHeaders, this.fileRecordsForUpload)
+      // Reset queue
+      this.fileRecordsForUpload = []
+    },
+    // add files to queue
+    filesSelected: function (fileRecordsNewlySelected) {
+      var validFileRecords = fileRecordsNewlySelected.filter((fileRecord) => !fileRecord.error)
+      this.fileRecordsForUpload = this.fileRecordsForUpload.concat(validFileRecords)
+    },
+    // delete related function
+    onBeforeDelete: function (fileRecord) {
+      var i = this.fileRecordsForUpload.indexOf(fileRecord)
+      if (i !== -1) {
+        this.fileRecordsForUpload.splice(i, 1)
+        var k = this.fileRecords.indexOf(fileRecord)
+        if (k !== -1) this.fileRecords.splice(k, 1)
+      } else {
+        if (confirm('Are you sure you want to delete?')) {
+          this.$refs.vueFileAgent.deleteFileRecord(fileRecord)
+        }
+      }
+    },
+    deleteUploadedFile: function (fileRecord) {
+      // Using the default uploader.
+      // this.$refs.vueFileAgent.deleteUpload(this.uploadUrl, this.uploadHeaders, fileRecord)
+    },
+    fileDeleted: function (fileRecord) {
+      var i = this.fileRecordsForUpload.indexOf(fileRecord)
+      if (i !== -1) {
+        this.fileRecordsForUpload.splice(i, 1)
+      } else {
+        this.deleteUploadedFile(fileRecord)
       }
     }
   },
