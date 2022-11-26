@@ -4,6 +4,11 @@ import Vue from 'vue'
 import App from './App'
 import router from './router'
 
+import VueFileAgent from 'vue-file-agent'
+import VueFileAgentStyles from 'vue-file-agent/dist/vue-file-agent.css'
+Vue.use(VueFileAgent)
+Vue.use(VueFileAgentStyles)
+
 Vue.config.productionTip = false
 
 /* eslint-disable no-new */
