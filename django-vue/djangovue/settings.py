@@ -40,17 +40,23 @@ INSTALLED_APPS = [
     'catalog',
     'auto.apps.AutoConfig',
     'django_extensions',
+    'rest_framework',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
+
+# allow all CORS access
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'djangovue.urls'
 
