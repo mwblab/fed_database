@@ -1,8 +1,19 @@
 # automice
 
 
+## run dev server
 
-# django dev
+`python manage.py runserver 0.0.0.0:5000`
+
+## run vue dev server
+
+`cd frontend`
+
+`npm run dev`
+
+update host, port in frontend/config/index.js 
+
+## django dev
 
 `cd django-vue`
 
@@ -12,13 +23,13 @@
 
 `python manage.py runserver`
 
-# create migration
+## create migration
 
 `python manage.py makemigrations`
 
 `python manage.py migrate`
 
-# create data migration
+## create data migration
 
 # https://docs.djangoproject.com/en/4.1/howto/initial-data/
 
