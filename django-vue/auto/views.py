@@ -21,11 +21,36 @@ def studies(request):
         serializer = TaskSerializer(studies, many=True)
         return JsonResponse(serializer.data,safe=False)
     elif(request.method == 'POST'):
+        print("in backend post")
         data = JSONParser().parse(request)
+        print(request)
+        print(data)
         serializer = TaskSerializer(data=data)
         if(serializer.is_valid()):
             serializer.save()
             return JsonResponse(serializer.data, status=201)
+        else:
+            print("data not valid")
+        
     return JsonResponse(serializer.errors, status=400)
+
+
+@csrf_exempt
+def study_detail(request, pk):
+    try:
+        study = Study.objects.get(pk=pk)
+    except:
+        return HttpResponse(status=404) 
+
+    if(request.method == 'PUT'):
+        data = JSONParser().parse(request) 
+        serializer = TaskSerializer(study, data=data)
+        if(serializer.is_valid()):  
+            serializer.save() 
+            return JsonResponse(serializer.data, status=201)
+
+        return JsonResponse(serializer.errors, status=400)
+
+
 
 
