@@ -20,6 +20,7 @@ from django.conf.urls.static import static
 from .routers import router
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication 
 
+# https://stackoverflow.com/questions/30871033/django-rest-framework-remove-csrf
 class CsrfExemptSessionAuthentication(SessionAuthentication):
     def enforce_csrf(self, request):
         return  # To not perform the csrf check previously happening
