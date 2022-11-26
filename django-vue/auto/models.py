@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 # Create your models here.
 class Test(models.Model):
@@ -71,9 +72,13 @@ class FedDataRolling(models.Model):
     fedDate = models.DateField()
     mouse = models.ForeignKey(Mouse, on_delete=models.CASCADE)
 
+class Data(models.Model):
+    file_id = models.AutoField(primary_key=True)
+    file = models.FileField(null=True, max_length=255)
+    date_created = models.DateTimeField(default = timezone.now)
+    def __str__(self):
+        return str(self.file.name)
+
 
     
-
-
-
 
