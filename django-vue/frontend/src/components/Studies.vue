@@ -25,6 +25,10 @@
         Upload {{ fileRecordsForUpload.length }} files
         </button>
 
+        <br>
+        <br>
+        <p>after uploading, compute cohort data by hour, poke</p>
+        <button :disabled=cal_running @click="calData()">Calculate</button>
         <!--
         <div class="add_study">
             <form v-on:submit.prevent="submitForm">
@@ -73,7 +77,8 @@ export default {
       fileRecords: [],
       uploadUrl: 'http://128.173.224.170:3000/api/files/',
       // uploadHeaders: { 'X-Test-Header': 'vue-file-agent' },
-      fileRecordsForUpload: [] // maintain an upload queue
+      fileRecordsForUpload: [], // maintain an upload queue
+      cal_running: false
     }
   },
   methods: {
@@ -124,6 +129,21 @@ export default {
         })
       } catch (error) {
         console.log(error)
+      }
+    },
+    async calData () {
+      const sData = {}
+      sData.cId = this.cohort_id
+      const requestOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sData)
+      }
+      const response = await fetch('http://128.173.224.170:3000/api/auto/proccal/', requestOptions)
+      if (response.status === 201) {
+        alert('calculate successful')
+      } else {
+        alert('fail, please contact admin')
       }
     },
     // for uploader

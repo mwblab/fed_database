@@ -9,7 +9,7 @@ from django.http import HttpResponse, JsonResponse
 # API definition for task
 from .serializers import TaskSerializer
 from .models import Study
-from auto.calcu import load_raw_data
+from auto.calcu import load_raw_data, cal_data
 
 @csrf_exempt
 def studies(request):
@@ -64,12 +64,20 @@ def proc_data_load(request):
                 ret_mouse = load_raw_data.get_mouse_obj(file_path , cohort_id)
                 load_raw_data.import_fed_csv(file_path, ret_mouse)
             return HttpResponse(status=201) 
-        except:
+        except Exception as e:
+            print(e)
             return HttpResponse(status=400) 
-
 # cal
 @csrf_exempt
 def proc_cal(request):
-    pass
-
+    if(request.method == 'POST'):
+        try:
+            # decode json
+            data = JSONParser().parse(request) 
+            cohort_id = data['cId']
+            cal_data.proc_run(cohort_id)
+            return HttpResponse(status=201) 
+        except Exception as e:
+            print(e)
+            return HttpResponse(status=400) 
 
