@@ -6,4 +6,5 @@ from auto import views
 urlpatterns = [
         path('auto/', views.studies),
         path('auto/<int:pk>/', views.study_detail),
+        path('auto/procdl/', views.proc_data_load),
 ]
