@@ -19,22 +19,13 @@
           @select="filesSelected($event)"
           v-model="fileRecords"
         ></VueFileAgent>
+        <label for="cohort_id">Cohort ID</label>
+        <input type="text" class="form-control" id="title" v-model="cohort_id">
         <button :disabled="!fileRecordsForUpload.length" @click="uploadFiles()">
-          Upload {{ fileRecordsForUpload.length }} files
+        Upload {{ fileRecordsForUpload.length }} files
         </button>
 
-        <div class="cohort_upload_raw">
-            <form v-on:submit.prevent="uploadRaw">
-              <div class="form-group">
-                  <label for="cohort_id">Cohort ID</label>
-                  <input type="text" class="form-control" id="title" v-model="cohort_id">
-              </div>
-              <div class="form-group">
-                  <button type="submit">Upload Raw Files</button>
-              </div>
-            </form>
-        </div>
-
+        <!--
         <div class="add_study">
             <form v-on:submit.prevent="submitForm">
               <div class="form-group">
@@ -65,9 +56,9 @@
 
                     <button @click="deleteTask(stu)">Delete</button>
                 </li>
-
             </ul>
-        </div>
+          </div>
+          !-->
     </div>
 </template>
 
@@ -78,7 +69,7 @@ export default {
       studies: [''],
       title: '',
       description: '',
-      cohort_id: 0,
+      cohort_id: 1,
       fileRecords: [],
       uploadUrl: 'http://128.173.224.170:3000/api/files/',
       // uploadHeaders: { 'X-Test-Header': 'vue-file-agent' },
@@ -109,16 +100,8 @@ export default {
 
         console.log('to send post')
         const response = await fetch('http://128.173.224.170:3000/api/auto/', requestOptions)
-        // const response = await this.$http.post('http://128.173.224.170:3000/api/auto/', {
-        // studyDisplayName: this.title,
-        //  studyDesc: this.description,
-        //  completed: false
-        // })
         const data = await response.json()
-
         this.studies.push(data)
-        // this.title = ''
-        // this.description = ''
       } catch (error) {
         console.log(error)
       }
@@ -144,11 +127,31 @@ export default {
       }
     },
     // for uploader
-    uploadFiles: function () {
+    async uploadFiles () {
       // Using the default uploader. You may use another uploader instead.
-      this.$refs.vueFileAgent.upload(this.uploadUrl, this.uploadHeaders, this.fileRecordsForUpload)
+      let result = await this.$refs.vueFileAgent.upload(this.uploadUrl, this.uploadHeaders, this.fileRecordsForUpload)
       // Reset queue
       this.fileRecordsForUpload = []
+
+      // Execute data load, (be atomic)
+      const sData = {}
+      sData.fileList = []
+      for (var i = 0; i < result.length; i++) {
+        sData.fileList.push(result[i].data.name)
+      }
+      sData.cId = this.cohort_id
+      const requestOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sData)
+      }
+      console.log(requestOptions)
+      const response = await fetch('http://128.173.224.170:3000/api/auto/procdl/', requestOptions)
+      if (response.status === 201) {
+        alert('upload successful')
+      } else {
+        alert('fail, please upload again')
+      }
     },
     // add files to queue
     filesSelected: function (fileRecordsNewlySelected) {
