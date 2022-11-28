@@ -14,7 +14,10 @@
     "axios": "^1.2.0",
     "vue": "^2.5.2",
     "vue-file-agent": "^1.7.3",
-    "vue-router": "^3.0.1"
+    "vue-json-csv": "^1.2.12",
+    "vue-router": "^3.0.1",
+    "vue2-datepicker": "^3.11.0",
+    "vuetify": "^2.6.12"
   },
   "devDependencies": {
     "autoprefixer": "^7.1.2",

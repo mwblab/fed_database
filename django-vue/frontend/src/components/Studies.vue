@@ -2,6 +2,10 @@
 <template>
 
     <div class="studies_container">
+        <p>Step 1. choose one cohort</p>
+        <label for="cohort_id">Cohort ID</label>
+        <input type="text" class="form-control" id="cohort_id" v-model="cohort_id">
+        <br>
         <VueFileAgent
           ref="vueFileAgent"
           :theme="'list'"
@@ -19,50 +23,36 @@
           @select="filesSelected($event)"
           v-model="fileRecords"
         ></VueFileAgent>
-        <label for="cohort_id">Cohort ID</label>
-        <input type="text" class="form-control" id="title" v-model="cohort_id">
         <button :disabled="!fileRecordsForUpload.length" @click="uploadFiles()">
         Upload {{ fileRecordsForUpload.length }} files
         </button>
-
         <br>
-        <br>
-        <p>after uploading, compute cohort data by hour, poke</p>
+        <p>Step 2. after uploading, calculate cohort data by hour, poke</p>
         <button :disabled=cal_running @click="calData()">Calculate</button>
-        <!--
-        <div class="add_study">
-            <form v-on:submit.prevent="submitForm">
-              <div class="form-group">
-                  <label for="title">Title</label>
-                  <input type="text" class="form-control" id="title" v-model="title">
-              </div>
-              <div class="form-group">
-                  <label for="description">Description</label>
-                  <textarea class="form-control" id="description" v-model="description"></textarea>
-              </div>
-              <div class="form-group">
-                  <button type="submit">Add Study</button>
-              </div>
-            </form>
-        </div>
-
-        <div class="studies_content">
-            <h1>Studies</h1>
-            <ul class="studies_list">
-                <li v-for="stu in studies" :key="stu.id">
-
-                    <h2>{{ stu.studyDisplayName }}</h2>
-                    <p>{{ stu.id }}</p>
-
-                    <button @click="toggleTask(stu)">
-                    toggle
-                    </button>
-
-                    <button @click="deleteTask(stu)">Delete</button>
-                </li>
-            </ul>
-          </div>
-          !-->
+        <br>
+        <p>Step 3. download acquisition csv of one cohort</p>
+        <p>Latest Day and Previous Day Length</p>
+        <date-picker v-model="time_acq_picker" valueType="format"></date-picker>
+        <input type="text" class="form-control" id="time_acq_range" size="4" v-model="time_acq_range">
+        <p>Number of Pellets retrieved that day</p>
+        M: <input type="text" class="form-control" id="cri_num_p_day_m_id" size="4" v-model="cri_num_p_day_m">
+        F: <input type="text" class="form-control" id="cri_num_p_day_f_id" size="4" v-model="cri_num_p_day_f">
+        <p>End of Day % Correct
+        <input type="text" class="form-control" id="cri_end_day_acc_id" size="4" v-model="cri_end_day_acc">
+        </p>
+        <p>% Correct in Rolling Average of 30
+        <input type="text" class="form-control" id="cri_max_rol_avg30_id" size="4" v-model="cri_max_rol_avg30">
+        </p>
+        <p>Stable to % of Pellets Yesterday
+        <input type="text" class="form-control" id="cri_stab_yes_id" size="4" v-model="cri_stab_yes">
+        </p>
+        <button @click="getAcqTable()">Prepare Acquisition Table</button>
+        <download-csv
+        class   = "btn btn-default"
+        :data   = "acq_table"
+        name    = "acq_table.csv">
+        <button class="button" :disabled=!acq_table_ready>Download csv</button>
+        </download-csv>
     </div>
 </template>
 
@@ -71,14 +61,21 @@ export default {
   data () {
     return {
       studies: [''],
-      title: '',
-      description: '',
       cohort_id: 1,
       fileRecords: [],
       uploadUrl: 'http://128.173.224.170:3000/api/files/',
       // uploadHeaders: { 'X-Test-Header': 'vue-file-agent' },
       fileRecordsForUpload: [], // maintain an upload queue
-      cal_running: false
+      cal_running: false,
+      time_acq_picker: (new Date()).getFullYear() + '-' + (new Date().getMonth() + 1) + '-' + (new Date()).getDate(),
+      time_acq_range: 10,
+      cri_num_p_day_m: 60,
+      cri_num_p_day_f: 50,
+      cri_end_day_acc: 0.75,
+      cri_max_rol_avg30: 0.8,
+      cri_stab_yes: 0.2,
+      acq_table: [{'name': 'test'}],
+      acq_table_ready: false
     }
   },
   methods: {
@@ -144,6 +141,33 @@ export default {
         alert('calculate successful')
       } else {
         alert('fail, please contact admin')
+      }
+    },
+    async getAcqTable () {
+      // update acq_table variable
+      // update csv filename
+      const sData = {}
+      sData.cId = this.cohort_id
+      sData.time_acq_picker = this.time_acq_picker
+      sData.time_acq_range = this.time_acq_range
+      sData.cri_num_p_day_m = this.cri_num_p_day_m
+      sData.cri_num_p_day_f = this.cri_num_p_day_f
+      sData.cri_end_day_acc = this.cri_end_day_acc
+      sData.cri_max_rol_avg30 = this.cri_max_rol_avg30
+      sData.cri_stab_yes = this.cri_stab_yes
+      const requestOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sData)
+      }
+      const response = await fetch('http://128.173.224.170:3000/api/auto/procacq/', requestOptions)
+      this.acq_table = await response.json()
+      // console.log(this.acq_table)
+      if (response.status === 201) {
+        alert('get acq successful')
+        this.acq_table_ready = 'true'
+      } else {
+        alert('get acq fail, please contact admin')
       }
     },
     // for uploader
