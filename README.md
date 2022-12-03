@@ -45,6 +45,11 @@ access website
 `python manage.py makemigrations --empty auto`
 
 
+## reset tables
+
+`python ../manage.py runscript reset_data`
+
+https://django-extensions.readthedocs.io/en/latest/runscript.html
 
 
 # Dev issue
@@ -99,9 +104,4 @@ https://jasonwatmore.com/post/2022/06/09/vue-fetch-http-put-request-examples
 https://blog.logrocket.com/how-to-build-vue-js-app-django-rest-framework/#setting-up-vuejs-client-app
 
 
-# tbd
-
-reset db, print progress frontend, don't dup hr,day,rolling (db cal running flag), atomic roll back, study cohort UI, cal day progress table
-
-check 00, 01 data and date incorrect csv
 
