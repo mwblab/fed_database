@@ -57,7 +57,7 @@ def proc_data_load(request):
         try:
             # decode json
             data = JSONParser().parse(request) 
-            cohort_id = data['cId']
+            cohort_id = int(data['cId'])
             file_list = data['fileList']
             for f in file_list: 
                 file_path = "media/" + f
@@ -74,9 +74,22 @@ def proc_cal(request):
         try:
             # decode json
             data = JSONParser().parse(request) 
-            cohort_id = data['cId']
+            cohort_id = int(data['cId'])
             cal_data.proc_run(cohort_id)
             return HttpResponse(status=201) 
+        except Exception as e:
+            print(e)
+            return HttpResponse(status=400) 
+
+@csrf_exempt
+def proc_acq(request):
+    if(request.method == 'POST'):
+        try:
+            # decode json
+            data = JSONParser().parse(request) 
+            ret = cal_data.cal_acq(int(data['cId']), data['time_acq_picker'], int(data['time_acq_range']), int(data['cri_num_p_day_m']), int(data['cri_num_p_day_f']), float(data['cri_end_day_acc']), float(data['cri_max_rol_avg30']), float(data['cri_stab_yes']) )
+            #print(ret)
+            return JsonResponse(ret, safe=False, status=201)
         except Exception as e:
             print(e)
             return HttpResponse(status=400) 
