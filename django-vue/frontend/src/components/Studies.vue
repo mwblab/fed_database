@@ -23,6 +23,8 @@
           @select="filesSelected($event)"
           v-model="fileRecords"
         ></VueFileAgent>
+        <label for="num_day">Day</label>
+        <input type="text" class="form-control" id="num_day_id" size="4" v-model="num_day">
         <button :disabled="!fileRecordsForUpload.length" @click="uploadFiles()">
         Upload {{ fileRecordsForUpload.length }} files
         </button>
@@ -34,17 +36,21 @@
         <p>Latest Day and Previous Day Length</p>
         <date-picker v-model="time_acq_picker" valueType="format"></date-picker>
         <input type="text" class="form-control" id="time_acq_range" size="4" v-model="time_acq_range">
-        <p>Number of Pellets retrieved that day</p>
+        <p>Number of Pellets retrieved that day
         M: <input type="text" class="form-control" id="cri_num_p_day_m_id" size="4" v-model="cri_num_p_day_m">
         F: <input type="text" class="form-control" id="cri_num_p_day_f_id" size="4" v-model="cri_num_p_day_f">
+        </p>
         <p>End of Day % Correct
-        <input type="text" class="form-control" id="cri_end_day_acc_id" size="4" v-model="cri_end_day_acc">
+        M: <input type="text" class="form-control" id="cri_end_day_acc_m_id" size="4" v-model="cri_end_day_acc_m">
+        F: <input type="text" class="form-control" id="cri_end_day_acc_f_id" size="4" v-model="cri_end_day_acc_f">
         </p>
         <p>% Correct in Rolling Average of 30
-        <input type="text" class="form-control" id="cri_max_rol_avg30_id" size="4" v-model="cri_max_rol_avg30">
+        M: <input type="text" class="form-control" id="cri_max_rol_avg30_m_id" size="4" v-model="cri_max_rol_avg30_m">
+        F: <input type="text" class="form-control" id="cri_max_rol_avg30_f_id" size="4" v-model="cri_max_rol_avg30_f">
         </p>
         <p>Stable to % of Pellets Yesterday
-        <input type="text" class="form-control" id="cri_stab_yes_id" size="4" v-model="cri_stab_yes">
+        M: <input type="text" class="form-control" id="cri_stab_yes_m_id" size="4" v-model="cri_stab_yes_m">
+        F: <input type="text" class="form-control" id="cri_stab_yes_f_id" size="4" v-model="cri_stab_yes_f">
         </p>
         <button @click="getAcqTable()">Prepare Acquisition Table</button>
         <download-csv
@@ -62,6 +68,7 @@ export default {
     return {
       studies: [''],
       cohort_id: 1,
+      num_day: 21,
       fileRecords: [],
       uploadUrl: 'http://128.173.224.170:3000/api/files/',
       // uploadHeaders: { 'X-Test-Header': 'vue-file-agent' },
@@ -71,9 +78,12 @@ export default {
       time_acq_range: 10,
       cri_num_p_day_m: 60,
       cri_num_p_day_f: 50,
-      cri_end_day_acc: 0.75,
-      cri_max_rol_avg30: 0.8,
-      cri_stab_yes: 0.2,
+      cri_end_day_acc_m: 0.75,
+      cri_end_day_acc_f: 0.75,
+      cri_max_rol_avg30_m: 0.8,
+      cri_max_rol_avg30_f: 0.8,
+      cri_stab_yes_m: 0.2,
+      cri_stab_yes_f: 0.2,
       acq_table: [{'name': 'test'}],
       acq_table_ready: false
     }
@@ -152,9 +162,12 @@ export default {
       sData.time_acq_range = this.time_acq_range
       sData.cri_num_p_day_m = this.cri_num_p_day_m
       sData.cri_num_p_day_f = this.cri_num_p_day_f
-      sData.cri_end_day_acc = this.cri_end_day_acc
-      sData.cri_max_rol_avg30 = this.cri_max_rol_avg30
-      sData.cri_stab_yes = this.cri_stab_yes
+      sData.cri_end_day_acc_m = this.cri_end_day_acc_m
+      sData.cri_end_day_acc_f = this.cri_end_day_acc_f
+      sData.cri_max_rol_avg30_m = this.cri_max_rol_avg30_m
+      sData.cri_max_rol_avg30_f = this.cri_max_rol_avg30_f
+      sData.cri_stab_yes_m = this.cri_stab_yes_m
+      sData.cri_stab_yes_f = this.cri_stab_yes_f
       const requestOptions = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -184,6 +197,7 @@ export default {
         sData.fileList.push(result[i].data.name)
       }
       sData.cId = this.cohort_id
+      sData.numDay = this.num_day
       const requestOptions = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

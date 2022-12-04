@@ -46,6 +46,7 @@ def get_mouse_obj(csv_path, cohort_id):
         return ret_mouse
     except Fed.DoesNotExist as err: 
         # insert new fed and ini new mouse
+        # what if new cohort?
         new_fed = Fed(cohort_id = cohort_id, fedDisplayName = "FED%03d" % devNum)
         new_fed.save()
 
@@ -62,7 +63,8 @@ def get_mouse_obj(csv_path, cohort_id):
 
 
 
-def import_fed_csv(csv_path, ret_mouse):
+# tbd: key error handling
+def import_fed_csv(csv_path, ret_mouse, num_day):
 
     f = pd.read_csv(csv_path)
 
@@ -93,11 +95,10 @@ def import_fed_csv(csv_path, ret_mouse):
             rt = int(rt)
         
         m = Mouse.objects.get(pk=1)
-        fd = FedDataRaw(actTimestamp=str2datetime(r[0]), deviceNumber=r[1], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
+        fd = FedDataRaw(actTimestamp=str2datetime(r[0]), actNumDay=num_day, deviceNumber=r[1], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
         fd.save()
 
-
-
+# tbd: split error handling
 def str2datetime(str):
     s1 = str.split(" ")
     date_sp = s1[0].split("/")
