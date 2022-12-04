@@ -4,7 +4,7 @@ import pandas as pd
 import pytz
 import math
 import os, sys
-from auto.models import Mouse, FedDataRaw, Fed
+from auto.models import Mouse, FedDataRaw, Fed, FedDataTestType
 
 def run():
 
@@ -94,9 +94,20 @@ def import_fed_csv(csv_path, ret_mouse, num_day):
         else:
             rt = int(rt)
         
-        m = Mouse.objects.get(pk=1)
         fd = FedDataRaw(actTimestamp=str2datetime(r[0]), actNumDay=num_day, deviceNumber=r[1], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
         fd.save()
+
+    # get filename
+    file_name = os.path.basename(csv_path)
+    file_name_wo_ext = os.path.splitext(file_name)[0]
+    file_name_sp = file_name_wo_ext.split("_")
+    test_type = file_name_sp[-1]
+    if len(test_type) >= 5 and len(test_type) <= 8:
+        test_type = file_name_sp[-2]
+    if test_type in ['PR', 'QU', 'FR3', 'FR3R', 'EXT', 'REI']:
+        # insert
+        fdtt = FedDataTestType(testType=test_type, fedNumDay=num_day, mouse=ret_mouse)
+        fdtt.save()
 
 # tbd: split error handling
 def str2datetime(str):

@@ -76,6 +76,12 @@ class FedDataRolling(models.Model):
     fedNumDay = models.IntegerField(default=0)
     mouse = models.ForeignKey(Mouse, on_delete=models.CASCADE)
 
+class FedDataTestType(models.Model):
+    testType = models.CharField(max_length=10)
+    fedNumDay = models.IntegerField(default=0)
+    mouse = models.ForeignKey(Mouse, on_delete=models.CASCADE)
+
+
 class Data(models.Model):
     file_id = models.AutoField(primary_key=True)
     file = models.FileField(null=True, max_length=255)

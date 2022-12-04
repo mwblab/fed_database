@@ -1,4 +1,4 @@
-from auto.models import Mouse, FedDataRaw, FedDataByHour, FedDataByDay, Cohort, FedDataRolling, Data, Fed, Study
+from auto.models import Mouse, FedDataRaw, FedDataByHour, FedDataByDay, Cohort, FedDataRolling, Data, Fed, Study, FedDataTestType
 from datetime import datetime, date, timedelta
 from django.utils import timezone
 from django.db.models import Avg, F, RowRange, Window
@@ -10,6 +10,7 @@ def run():
     FedDataByHour.objects.all().delete()
     FedDataByDay.objects.all().delete()
     FedDataRaw.objects.all().delete()
+    FedDataTestType.objects.all().delete()
 
     # del data upload log (data table)
     Data.objects.all().delete()
