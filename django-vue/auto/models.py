@@ -31,6 +31,7 @@ class Mouse(models.Model):
 
 class FedDataRaw(models.Model):
     actTimestamp = models.DateTimeField()
+    actNumDay = models.IntegerField(default=0)
     deviceNumber = models.CharField(max_length=10)
     batteryVol = models.CharField(max_length=10)
     motorTurns = models.CharField(max_length=5)
@@ -53,6 +54,7 @@ class FedDataByHour(models.Model):
     endTime = models.DateTimeField()
     numHour = models.IntegerField(default=0) #1-8
     fedDate = models.DateField()
+    fedNumDay = models.IntegerField(default=0)
     mouse = models.ForeignKey(Mouse, on_delete=models.CASCADE)
 
 class FedDataByDay(models.Model):
@@ -62,6 +64,7 @@ class FedDataByDay(models.Model):
     activePoke = models.IntegerField(default=0) # 1 for left, 2 for right
     pokeAcc = models.DecimalField(default=0.0, max_digits=7, decimal_places=6)
     fedDate = models.DateField()
+    fedNumDay = models.IntegerField(default=0)
     mouse = models.ForeignKey(Mouse, on_delete=models.CASCADE)
 
 class FedDataRolling(models.Model):
@@ -70,6 +73,7 @@ class FedDataRolling(models.Model):
     startTime = models.DateTimeField()
     endTime = models.DateTimeField()
     fedDate = models.DateField()
+    fedNumDay = models.IntegerField(default=0)
     mouse = models.ForeignKey(Mouse, on_delete=models.CASCADE)
 
 class Data(models.Model):

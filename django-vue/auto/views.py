@@ -58,11 +58,12 @@ def proc_data_load(request):
             # decode json
             data = JSONParser().parse(request) 
             cohort_id = int(data['cId'])
+            num_day = int(data['numDay'])
             file_list = data['fileList']
             for f in file_list: 
                 file_path = "media/" + f
                 ret_mouse = load_raw_data.get_mouse_obj(file_path , cohort_id)
-                load_raw_data.import_fed_csv(file_path, ret_mouse)
+                load_raw_data.import_fed_csv(file_path, ret_mouse, num_day)
             return HttpResponse(status=201) 
         except Exception as e:
             print(e)
@@ -87,7 +88,7 @@ def proc_acq(request):
         try:
             # decode json
             data = JSONParser().parse(request) 
-            ret = cal_data.cal_acq(int(data['cId']), data['time_acq_picker'], int(data['time_acq_range']), int(data['cri_num_p_day_m']), int(data['cri_num_p_day_f']), float(data['cri_end_day_acc']), float(data['cri_max_rol_avg30']), float(data['cri_stab_yes']) )
+            ret = cal_data.cal_acq(int(data['cId']), data['time_acq_picker'], int(data['time_acq_range']), int(data['cri_num_p_day_m']), int(data['cri_num_p_day_f']), float(data['cri_end_day_acc_m']), float(data['cri_end_day_acc_f']), float(data['cri_max_rol_avg30_m']), float(data['cri_max_rol_avg30_f']), float(data['cri_stab_yes_m']), float(data['cri_stab_yes_f']) )
             #print(ret)
             return JsonResponse(ret, safe=False, status=201)
         except Exception as e:
