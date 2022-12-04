@@ -8,4 +8,5 @@ urlpatterns = [
         path('auto/<int:pk>/', views.study_detail),
         path('auto/procdl/', views.proc_data_load),
         path('auto/proccal/', views.proc_cal),
+        path('auto/procacq/', views.proc_acq)
 ]

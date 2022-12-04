@@ -168,4 +168,157 @@ def cal_rolling(m, d, win_size):
         fdr = FedDataRolling(pokeAcc=avg, windowSize=win_size, startTime=items[i-(win_size-1)].startTime, endTime=items[i].startTime, fedDate=d,mouse=m)
         fdr.save()
 
+def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num_p_day_f, cri_end_day_acc, cri_max_rol_avg30, cri_stab_yes):
+    window_size = 30   
 
+    # get data of all days and mouses, day based
+    pick_date_end = date.fromisoformat(time_acq_picker)
+    pick_date_start = pick_date_end + timedelta(days=-time_acq_range)
+    
+    # get day
+    qs_day = FedDataByDay.objects.filter(mouse__fed__cohort_id=cohort_id, fedDate__range=[pick_date_start, pick_date_end])
+    # get rolling day info, different structure
+    qs_rol = FedDataRolling.objects.filter(mouse__fed__cohort_id=cohort_id, fedDate__range=[pick_date_start, pick_date_end], windowSize=window_size).values('fedDate', 'mouse_id').annotate(rollMaxPokeAcc=Max('pokeAcc'))
+
+    # get mouse list
+    mouse_list = Mouse.objects.filter(fed__cohort_id=cohort_id).order_by('id')
+
+    # final output
+    cri_num_p_day_raw = []
+    cri_num_p_day_binary = []
+    cri_end_day_acc_raw = []
+    cri_end_day_acc_binary = []
+    cri_max_rol_avg30_raw = []
+    cri_max_rol_avg30_binary = []
+    cri_stab_yes_raw = []
+    cri_stab_yes_binary = []
+    cri_acq_sum = []
+    cri_acq_binary = []
+
+    # init mouse, day na table
+    for m in mouse_list:
+        # generate one row
+        roll_raw = {}
+        roll_raw['mouse_id'] = m.id
+        roll_raw['mouse_name'] = m.mouseDisplayName
+        roll_raw['genotype'] = m.genotype
+
+        if m.sex == 0:
+            roll_raw['sex'] = 'na'
+        elif m.sex == 1:
+            roll_raw['sex'] = 'male'
+        elif m.sex == 2:
+            roll_raw['sex'] = 'female'
+        else:
+            roll_raw['sex'] = m.sex
+
+        # num_p_day
+        # cri_stab_yes_binary
+        roll_raw['dataType'] = "num_p_day_raw"
+        roll_raw['threshold'] = "M:%d F:%d" % (cri_num_p_day_m, cri_num_p_day_f)
+        roll_stab = roll_raw.copy()
+        roll_stab['dataType'] = "stab_yes_binary"
+        roll_stab['threshold'] = cri_stab_yes
+        for dd in range(time_acq_range):
+            d = pick_date_start + timedelta(days=dd+1)
+
+            qs_day_m_day = qs_day.filter(mouse=m, fedDate=d)
+            roll_stab[d.isoformat()] = 0
+            if qs_day_m_day.exists():
+                roll_raw[d.isoformat()] = qs_day_m_day[0].pelletCount
+
+                if dd > 0:
+                    pre_day = pick_date_start + timedelta(days=dd)
+                    if roll_raw[pre_day.isoformat()] != 'na':
+                        pre_day_count = roll_raw[pre_day.isoformat()]
+                        max_pre_day_count = pre_day_count + pre_day_count*cri_stab_yes
+                        min_pre_day_count = pre_day_count - pre_day_count*cri_stab_yes
+                        if roll_raw[d.isoformat()] >= min_pre_day_count and roll_raw[d.isoformat()] <= max_pre_day_count:
+                            roll_stab[d.isoformat()] = 1
+            else:
+                roll_raw[d.isoformat()] = 'na'
+        cri_num_p_day_raw.append(roll_raw.copy())
+        cri_stab_yes_binary.append(roll_stab.copy())
+
+        roll_raw['dataType'] = "num_p_day_binary"
+        roll_raw['threshold'] = "M:%d F:%d" % (cri_num_p_day_m, cri_num_p_day_f)
+        for dd in range(time_acq_range):
+            d = pick_date_start + timedelta(days=dd+1)
+
+            if m.sex == 1:
+                qs_day_m_day = qs_day.filter(mouse=m, fedDate=d, pelletCount__gte = cri_num_p_day_m )
+            elif m.sex == 2:
+                qs_day_m_day = qs_day.filter(mouse=m, fedDate=d, pelletCount__gte = cri_num_p_day_f )
+            else:
+                qs_day_m_day = None
+
+            if qs_day_m_day and qs_day_m_day.exists():
+                roll_raw[d.isoformat()] = 1
+            else:
+                roll_raw[d.isoformat()] = 0
+        cri_num_p_day_binary.append(roll_raw.copy())
+        
+
+        #cri_end_day_acc
+        roll_raw['dataType'] = "end_day_acc_raw"
+        roll_raw['threshold'] = cri_end_day_acc
+        for dd in range(time_acq_range):
+            d = pick_date_start + timedelta(days=dd+1)
+            qs_day_m_day = qs_day.filter(mouse=m, fedDate=d)
+            if qs_day_m_day.exists():
+                roll_raw[d.isoformat()] = qs_day_m_day[0].pokeAcc
+            else:
+                roll_raw[d.isoformat()] = 'na'
+        cri_end_day_acc_raw.append(roll_raw.copy())
+        roll_raw['dataType'] = "end_day_acc_binary"
+        roll_raw['threshold'] = cri_end_day_acc
+        for dd in range(time_acq_range):
+            d = pick_date_start + timedelta(days=dd+1)
+            qs_day_m_day = qs_day.filter(mouse=m, fedDate=d, pokeAcc__gt = cri_end_day_acc)
+            if qs_day_m_day and qs_day_m_day.exists():
+                roll_raw[d.isoformat()] = 1
+            else:
+                roll_raw[d.isoformat()] = 0
+        cri_end_day_acc_binary.append(roll_raw.copy())
+
+                
+        # max10_ralling_30
+        roll_raw['dataType'] = "max10_rolling_30_raw"
+        roll_raw['threshold'] = cri_max_rol_avg30
+        for dd in range(time_acq_range):
+            d = pick_date_start + timedelta(days=dd+1)
+            qs_rol_m_day = qs_rol.filter(mouse=m, fedDate=d)
+            if qs_rol_m_day.exists():
+                roll_raw[d.isoformat()] = qs_rol_m_day[0]['rollMaxPokeAcc']
+            else:
+                roll_raw[d.isoformat()] = 'na'
+        cri_max_rol_avg30_raw.append(roll_raw.copy())
+        
+        # max10_ralling_30 binary
+        roll_raw['dataType'] = "max10_rolling_30_binary"
+        roll_raw['threshold'] = cri_max_rol_avg30
+        for dd in range(time_acq_range):
+            d = pick_date_start + timedelta(days=dd+1)
+            qs_rol_m_day = qs_rol.filter(mouse=m, fedDate=d).filter(rollMaxPokeAcc__gt = cri_max_rol_avg30)
+            if qs_rol_m_day.exists():
+                roll_raw[d.isoformat()] = 1
+            else:
+                roll_raw[d.isoformat()] = 0
+        cri_max_rol_avg30_binary.append(roll_raw.copy())
+
+        # cri_acq_result
+        roll_raw['dataType'] = "acq_sum"
+        roll_raw['threshold'] = ""
+        roll_binary = roll_raw.copy()
+        roll_binary['dataType'] = "acq_binary"
+        for dd in range(time_acq_range):
+            d = pick_date_start + timedelta(days=dd+1)
+
+            roll_raw[d.isoformat()] = cri_num_p_day_binary[-1][d.isoformat()] + cri_stab_yes_binary[-1][d.isoformat()] + cri_end_day_acc_binary[-1][d.isoformat()] + cri_max_rol_avg30_binary[-1][d.isoformat()]
+            roll_binary[d.isoformat()] = 1 if roll_raw[d.isoformat()] == 4 else 0
+        cri_acq_sum.append(roll_raw.copy())
+        cri_acq_binary.append(roll_binary.copy())
+
+
+    # return
+    return cri_acq_binary + cri_acq_sum + cri_num_p_day_binary + cri_stab_yes_binary + cri_end_day_acc_binary + cri_max_rol_avg30_binary + cri_end_day_acc_raw + cri_num_p_day_raw + cri_max_rol_avg30_raw
