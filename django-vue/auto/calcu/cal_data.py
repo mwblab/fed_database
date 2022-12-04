@@ -1,4 +1,4 @@
-from auto.models import Mouse, FedDataRaw, FedDataByHour, FedDataByDay, Cohort, FedDataRolling
+from auto.models import Mouse, FedDataRaw, FedDataByHour, FedDataByDay, Cohort, FedDataRolling, FedDataTestType
 from datetime import datetime, date, timedelta
 from django.utils import timezone
 from django.db.models import Avg, F, RowRange, Window, Max
@@ -258,6 +258,14 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                     thres_raw[STAB_YES*pick_num_day_total+feddata_num_day_offset] = cur_day_count
                     if feddata_num_day_offset > 0: #not the first one
                         pre_day_count = thres_raw[NUM_P_DAY*pick_num_day_total+(feddata_num_day_offset-1)]
+                        # if QU, PR
+                        #if feddata_num_day_index-1 > 0:
+                        test_type = FedDataTestType.objects.filter(mouse=mouse, fedNumDay=feddata_num_day_index-1)
+                        if test_type and (test_type[0].testType == "QU" or test_type[0].testType == "PR"):
+                            if feddata_num_day_offset-1 > 0: 
+                                pre_day_count = thres_raw[NUM_P_DAY*pick_num_day_total+(feddata_num_day_offset-2)]
+                            else:
+                                pre_day_count = 0
                         max_pre_day_count = pre_day_count + pre_day_count*feddata_threshold[STAB_YES][mouse_thres_index]
                         min_pre_day_count = pre_day_count - pre_day_count*feddata_threshold[STAB_YES][mouse_thres_index]
                         thres_raw[STAB_YES*pick_num_day_total+feddata_num_day_offset] = "%d(%d-%d)" % (cur_day_count, max_pre_day_count, min_pre_day_count)
@@ -316,6 +324,22 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
             for day_index in range(pick_num_day_total):
                 mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw'][type_index*pick_num_day_total + day_index]
             final_acq_output.append(mouse_row)
+    # generate test_type
+    for mouse in mouse_data_list:
+        mouse_row = {}
+        mouse_row['mouse_id'] = mouse['mouse_id']
+        mouse_row['mouse_name'] = mouse['mouse_name']
+        mouse_row['fed'] = mouse['fed']
+        mouse_row['genotype'] = mouse['genotype']
+        mouse_row['sex'] = mouse['sex']
+        mouse_row['data_type'] = "test_type"
+        for day_offset in range(pick_num_day_total):
+            test_type = FedDataTestType.objects.filter(mouse_id=mouse['mouse_id'], fedNumDay=pick_num_day_start+day_offset)
+            if test_type:
+                mouse_row[feddata_day_arr_name[day_offset]] = test_type[0].testType
+            else:
+                mouse_row[feddata_day_arr_name[day_offset]] = ""
+        final_acq_output.append(mouse_row)
 
     return final_acq_output
 
