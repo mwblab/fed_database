@@ -15,7 +15,7 @@
           :accept="'.csv'"
           :maxSize="'500MB'"
           :maxFiles="50"
-          :helpText="'Choose fed raw csv files. Can be multiple day (as long as the dates in csv files is correct).'"
+          :helpText="'Choose fed raw csv files. only one day is allowed.'"
           :errorText="{
             type: 'Invalid file type. Only csv Allowed',
             size: 'Files should not exceed 500MB in size',
