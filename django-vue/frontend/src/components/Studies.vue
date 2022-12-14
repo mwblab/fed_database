@@ -1,10 +1,19 @@
 
 <template>
-
     <div class="studies_container">
-        <p>Step 1. choose one cohort</p>
-        <label for="cohort_id">Cohort ID</label>
-        <input type="text" class="form-control" id="cohort_id" v-model="cohort_id">
+
+        <b-container class="bv-example-cohort">
+           <p>Step 1. choose one cohort</p>
+           <b-row align-h="center">
+                <b-col sm="2">
+                  <label for="input-default">Cohort ID</label>
+                </b-col>
+                <b-col sm="2">
+                  <b-form-input  type="number" class="form-control" size="sm" id="cohort_id" v-model="cohort_id"></b-form-input>
+                </b-col>
+           </b-row>
+        </b-container>
+
         <br>
         <VueFileAgent
           ref="vueFileAgent"
@@ -23,41 +32,94 @@
           @select="filesSelected($event)"
           v-model="fileRecords"
         ></VueFileAgent>
-        <label for="num_day">Day</label>
-        <input type="text" class="form-control" id="num_day_id" size="4" v-model="num_day">
-        <button :disabled="!fileRecordsForUpload.length" @click="uploadFiles()">
-        Upload {{ fileRecordsForUpload.length }} files
-        </button>
+        <b-container class="bv-example-day">
+
+          <b-row align-h="center">
+            <b-col sm="2">
+              <label for="num_day">Day</label>
+            </b-col>
+            <b-col sm="2">
+              <b-form-input type="number" class="form-control" size="sm" id="num_day_id" v-model="num_day"></b-form-input>
+            </b-col>
+          </b-row>
+          <b-button pill variant="primary" :disabled="!fileRecordsForUpload.length" @click="uploadFiles()">
+          Upload {{ fileRecordsForUpload.length }} files
+          </b-button>
+        </b-container>
         <br>
         <p>Step 2. after uploading, calculate cohort data by hour, poke</p>
-        <button :disabled=cal_running @click="calData()">Calculate</button>
+        <b-button pill variant="primary" :disabled=cal_running @click="calData()">Calculate</b-button>
         <br>
         <p>Step 3. download acquisition csv of one cohort</p>
-        <p>Latest Day and Previous Day Length</p>
-        <date-picker v-model="time_acq_picker" valueType="format"></date-picker>
-        <input type="text" class="form-control" id="time_acq_range" size="4" v-model="time_acq_range">
-        <p>Number of Pellets retrieved that day
-        M: <input type="text" class="form-control" id="cri_num_p_day_m_id" size="4" v-model="cri_num_p_day_m">
-        F: <input type="text" class="form-control" id="cri_num_p_day_f_id" size="4" v-model="cri_num_p_day_f">
-        </p>
-        <p>End of Day % Correct
-        M: <input type="text" class="form-control" id="cri_end_day_acc_m_id" size="4" v-model="cri_end_day_acc_m">
-        F: <input type="text" class="form-control" id="cri_end_day_acc_f_id" size="4" v-model="cri_end_day_acc_f">
-        </p>
-        <p>% Correct in Rolling Average of 30
-        M: <input type="text" class="form-control" id="cri_max_rol_avg30_m_id" size="4" v-model="cri_max_rol_avg30_m">
-        F: <input type="text" class="form-control" id="cri_max_rol_avg30_f_id" size="4" v-model="cri_max_rol_avg30_f">
-        </p>
-        <p>Stable to % of Pellets Yesterday
-        M: <input type="text" class="form-control" id="cri_stab_yes_m_id" size="4" v-model="cri_stab_yes_m">
-        F: <input type="text" class="form-control" id="cri_stab_yes_f_id" size="4" v-model="cri_stab_yes_f">
-        </p>
-        <button @click="getAcqTable()">Prepare Acquisition Table</button>
+
+        <b-container class="bv-example-cri">
+
+          <b-row align-h="center">
+            <b-col sm="4">Latest Day and Previous Day Length</b-col>
+            <b-col sm="2">
+              <date-picker v-model="time_acq_picker" valueType="format"></date-picker>
+              <b-form-input type="number" class="form-control" size="sm" id="time_acq_range" v-model="time_acq_range"></b-form-input>
+            </b-col>
+            <b-col sm="2">
+            </b-col>
+          </b-row>
+
+          <b-row align-h="center">
+            <b-col sm="4"></b-col>
+            <b-col sm="2">M
+            </b-col>
+            <b-col sm="2">F
+            </b-col>
+          </b-row>
+
+          <b-row align-h="center">
+            <b-col sm="4">Number of Pellets retrieved that day</b-col>
+            <b-col sm="2">
+            <b-form-input type="number" class="form-control" size="sm" id="cri_num_p_day_m_id" v-model="cri_num_p_day_m"></b-form-input>
+            </b-col>
+            <b-col sm="2">
+            <b-form-input type="number" class="form-control" size="sm" id="cri_num_p_day_f_id" v-model="cri_num_p_day_f"></b-form-input>
+            </b-col>
+          </b-row>
+
+          <b-row align-h="center">
+            <b-col sm="4">End of Day % Correct</b-col>
+            <b-col sm="2">
+            <b-form-input type="text" class="form-control" size="sm" id="cri_end_day_acc_m_id" v-model="cri_end_day_acc_m"></b-form-input>
+            </b-col>
+            <b-col sm="2">
+            <b-form-input type="text" class="form-control" size="sm" id="cri_end_day_acc_f_id" v-model="cri_end_day_acc_f"></b-form-input>
+            </b-col>
+          </b-row>
+
+          <b-row align-h="center">
+            <b-col sm="4">% Correct in Rolling Average of 30</b-col>
+            <b-col sm="2">
+            <b-form-input type="text" class="form-control" size="sm" id="cri_max_rol_avg30_m_id" v-model="cri_max_rol_avg30_m"></b-form-input>
+            </b-col>
+            <b-col sm="2">
+            <b-form-input type="text" class="form-control" size="sm" id="cri_max_rol_avg30_f_id" v-model="cri_max_rol_avg30_f"></b-form-input>
+            </b-col>
+          </b-row>
+
+          <b-row align-h="center">
+            <b-col sm="4">Stable to % of Pellets Yesterday</b-col>
+            <b-col sm="2">
+            <b-form-input type="text" class="form-control" size="sm" id="cri_stab_yes_m_id" v-model="cri_stab_yes_m"></b-form-input>
+            </b-col>
+            <b-col sm="2">
+            <b-form-input type="text" class="form-control" size="sm" id="cri_stab_yes_f_id" v-model="cri_stab_yes_f"></b-form-input>
+            </b-col>
+          </b-row>
+
+        </b-container>
+
+        <b-button pill variant="outline-secondary" @click="getAcqTable()">Prepare Acquisition Table</b-button>
         <download-csv
         class   = "btn btn-default"
         :data   = "acq_table"
         name    = "acq_table.csv">
-        <button class="button" :disabled=!acq_table_ready>Download csv</button>
+        <b-button pill variant="primary" class="button" :disabled=!acq_table_ready>Download CSV</b-button>
         </download-csv>
     </div>
 </template>
@@ -89,6 +151,14 @@ export default {
     }
   },
   methods: {
+    makeToast (msg, append = true) {
+      this.$bvToast.toast(msg, {
+        title: 'Notification',
+        autoHideDelay: 4000,
+        appendToast: append,
+        variant: 'primary'
+      })
+    },
     async getData () {
       try {
         // fetch tasks
@@ -148,9 +218,9 @@ export default {
       }
       const response = await fetch('http://128.173.224.170:3000/api/auto/proccal/', requestOptions)
       if (response.status === 201) {
-        alert('calculate successful')
+        await this.makeToast('Calculate: Successful!')
       } else {
-        alert('fail, please contact admin')
+        await this.makeToast('Calculate: Failed!')
       }
     },
     async getAcqTable () {
@@ -177,10 +247,10 @@ export default {
       this.acq_table = await response.json()
       // console.log(this.acq_table)
       if (response.status === 201) {
-        alert('get acq successful')
+        await this.makeToast('Prepare: Successful!')
         this.acq_table_ready = 'true'
       } else {
-        alert('get acq fail, please contact admin')
+        await this.makeToast('Prepare: Failed!')
       }
     },
     // for uploader
@@ -206,9 +276,9 @@ export default {
       console.log(requestOptions)
       const response = await fetch('http://128.173.224.170:3000/api/auto/procdl/', requestOptions)
       if (response.status === 201) {
-        alert('upload successful')
+        await this.makeToast('Upload: Successful!')
       } else {
-        alert('fail, please upload again')
+        await this.makeToast('Upload: Failed!')
       }
     },
     // add files to queue

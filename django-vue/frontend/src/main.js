@@ -12,6 +12,14 @@ import JsonCSV from 'vue-json-csv'
 import DatePicker from 'vue2-datepicker'
 import 'vue2-datepicker/index.css'
 
+// import bootstrap
+import { BootstrapVue, BootstrapVueIcons } from 'bootstrap-vue'
+import 'bootstrap/dist/css/bootstrap.css'
+import 'bootstrap-vue/dist/bootstrap-vue.css'
+
+Vue.use(BootstrapVue)
+Vue.use(BootstrapVueIcons)
+
 Vue.use(VueFileAgent)
 Vue.use(VueFileAgentStyles)
 
@@ -26,5 +34,6 @@ new Vue({
   el: '#app',
   router,
   components: { App },
-  template: '<App/>'
+  template: '<App/>',
+  render: h => h(App)
 })
