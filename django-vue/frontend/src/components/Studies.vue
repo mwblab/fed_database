@@ -3,13 +3,16 @@
     <div class="studies_container">
 
         <b-container class="bv-example-cohort">
-           <p>Step 1. choose one cohort</p>
+           <!--<p>Step 1. choose one cohort</p>!-->
            <b-row align-h="center">
+                <!--<b-col sm="2">
+                  <label for="input-default">Cohort</label>
+                </b-col>!-->
                 <b-col sm="2">
-                  <label for="input-default">Cohort ID</label>
-                </b-col>
-                <b-col sm="2">
-                  <b-form-input  type="number" class="form-control" size="sm" id="cohort_id" v-model="cohort_id"></b-form-input>
+                  <!--<b-form-input  type="number" class="form-control" size="sm" id="cohort_id" v-model="cohort_id"></b-form-input>!-->
+                  <b-dropdown id="dropdown-cohort" :text="dropdown_cohort_text" variant="outline-primary" class="m-2">
+                     <b-dropdown-item @click="setCohort(1)">Cohort 1</b-dropdown-item>
+                  </b-dropdown>
                 </b-col>
            </b-row>
         </b-container>
@@ -47,10 +50,11 @@
           </b-button>
         </b-container>
         <br>
-        <p>Step 2. after uploading, calculate cohort data by hour, poke</p>
+        <!--<p>Step 2. after uploading, calculate cohort data by hour, poke</p>!-->
         <b-button pill variant="primary" :disabled=cal_running @click="calData()">Calculate</b-button>
         <br>
-        <p>Step 3. download acquisition csv of one cohort</p>
+        <!--<p>Step 3. download acquisition csv of one cohort</p>!-->
+        <br>
 
         <b-container class="bv-example-cri">
 
@@ -83,7 +87,7 @@
           </b-row>
 
           <b-row align-h="center">
-            <b-col sm="4">End of Day % Correct</b-col>
+            <b-col sm="4">% Correct in the End of Day</b-col>
             <b-col sm="2">
             <b-form-input type="text" class="form-control" size="sm" id="cri_end_day_acc_m_id" v-model="cri_end_day_acc_m"></b-form-input>
             </b-col>
@@ -114,13 +118,20 @@
 
         </b-container>
 
-        <b-button pill variant="outline-secondary" @click="getAcqTable()">Prepare Acquisition Table</b-button>
+        <b-button pill variant="outline-secondary" @click="getAcqTable()">Show Acquisition Table</b-button>
         <download-csv
         class   = "btn btn-default"
         :data   = "acq_table"
         name    = "acq_table.csv">
         <b-button pill variant="primary" class="button" :disabled=!acq_table_ready>Download CSV</b-button>
         </download-csv>
+
+        <br>
+        <div v-if="acq_table_ready">
+          <b-table hover :items="acq_table_disp"></b-table>
+          <b-table hover :items="acq_table_test_type"></b-table>
+        </div>
+
     </div>
 </template>
 
@@ -147,10 +158,17 @@ export default {
       cri_stab_yes_m: 0.2,
       cri_stab_yes_f: 0.2,
       acq_table: [{'name': 'test'}],
-      acq_table_ready: false
+      acq_table_disp: [],
+      acq_table_test_type: [],
+      acq_table_ready: false,
+      dropdown_cohort_text: 'Select Cohort'
     }
   },
   methods: {
+    setCohort (num) {
+      this.cohort_id = num
+      this.dropdown_cohort_text = 'Cohort ' + num
+    },
     makeToast (msg, append = true) {
       this.$bvToast.toast(msg, {
         title: 'Notification',
@@ -247,10 +265,55 @@ export default {
       this.acq_table = await response.json()
       // console.log(this.acq_table)
       if (response.status === 201) {
-        await this.makeToast('Prepare: Successful!')
+        // prepare acq disp
+        this.acq_table_disp = []
+        this.acq_table_test_type = []
+        for (let i = 0; i < this.acq_table.length; i++) {
+          if (this.acq_table[i]['fed'] === 'pseufed') {
+            continue
+          }
+
+          var keys = Object.keys(this.acq_table[i])
+          if (this.acq_table[i].data_type === 'acq_table') {
+            // console.log(this.acq_table[i])
+
+            // remove unnecessary cols
+            delete this.acq_table[i]['data_type']
+            delete this.acq_table[i]['threshold']
+            // iter keys
+            this.acq_table[i]['_cellVariants'] = []
+            for (let j = 0; j < keys.length; j++) {
+              if (keys[j].slice(-1) === ' ') {
+                delete this.acq_table[i][keys[j]]
+              } else if (keys[j].slice(0, 1) === 'd') {
+                if (parseInt(this.acq_table[i][keys[j]]) === 1) {
+                  this.acq_table[i]['_cellVariants'][keys[j]] = 'success'
+                }
+              }
+            }
+            // push to disp
+            this.acq_table_disp.push(this.acq_table[i])
+          } else if (this.acq_table[i].data_type === 'test_type') {
+            // remove unnecessary cols
+            delete this.acq_table[i]['data_type']
+            delete this.acq_table[i]['threshold']
+            // iter keys
+            this.acq_table[i]['_cellVariants'] = []
+            for (let j = 0; j < keys.length; j++) {
+              if (keys[j].slice(0, 1) === 'd') {
+                if (this.acq_table[i][keys[j]]) {
+                  this.acq_table[i]['_cellVariants'][keys[j]] = 'warning'
+                }
+              }
+            }
+            // push to test type
+            this.acq_table_test_type.push(this.acq_table[i])
+          }
+        }
+        await this.makeToast('Show: Successful!')
         this.acq_table_ready = 'true'
       } else {
-        await this.makeToast('Prepare: Failed!')
+        await this.makeToast('Show: Failed!')
       }
     },
     // for uploader
