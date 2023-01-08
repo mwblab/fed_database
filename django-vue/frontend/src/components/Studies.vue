@@ -274,40 +274,41 @@ export default {
           }
 
           var keys = Object.keys(this.acq_table[i])
+          var tmpRow = Object.assign({}, this.acq_table[i])
           if (this.acq_table[i].data_type === 'acq_table') {
             // console.log(this.acq_table[i])
 
             // remove unnecessary cols
-            delete this.acq_table[i]['data_type']
-            delete this.acq_table[i]['threshold']
+            delete tmpRow['data_type']
+            delete tmpRow['threshold']
             // iter keys
-            this.acq_table[i]['_cellVariants'] = []
+            tmpRow['_cellVariants'] = []
             for (let j = 0; j < keys.length; j++) {
               if (keys[j].slice(-1) === ' ') {
-                delete this.acq_table[i][keys[j]]
+                delete tmpRow[keys[j]]
               } else if (keys[j].slice(0, 1) === 'd') {
-                if (parseInt(this.acq_table[i][keys[j]]) === 1) {
-                  this.acq_table[i]['_cellVariants'][keys[j]] = 'success'
+                if (parseInt(tmpRow[keys[j]]) === 1) {
+                  tmpRow['_cellVariants'][keys[j]] = 'success'
                 }
               }
             }
             // push to disp
-            this.acq_table_disp.push(this.acq_table[i])
+            this.acq_table_disp.push(tmpRow)
           } else if (this.acq_table[i].data_type === 'test_type') {
             // remove unnecessary cols
-            delete this.acq_table[i]['data_type']
-            delete this.acq_table[i]['threshold']
+            delete tmpRow['data_type']
+            delete tmpRow['threshold']
             // iter keys
-            this.acq_table[i]['_cellVariants'] = []
+            tmpRow['_cellVariants'] = []
             for (let j = 0; j < keys.length; j++) {
               if (keys[j].slice(0, 1) === 'd') {
-                if (this.acq_table[i][keys[j]]) {
-                  this.acq_table[i]['_cellVariants'][keys[j]] = 'warning'
+                if (tmpRow[keys[j]]) {
+                  tmpRow['_cellVariants'][keys[j]] = 'warning'
                 }
               }
             }
             // push to test type
-            this.acq_table_test_type.push(this.acq_table[i])
+            this.acq_table_test_type.push(tmpRow)
           }
         }
         await this.makeToast('Show: Successful!')
