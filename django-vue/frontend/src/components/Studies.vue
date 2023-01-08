@@ -37,17 +37,22 @@
         ></VueFileAgent>
         <b-container class="bv-example-day">
 
-          <b-row align-h="center">
-            <b-col sm="2">
-              <label for="num_day">Day</label>
-            </b-col>
-            <b-col sm="2">
-              <b-form-input type="number" class="form-control" size="sm" id="num_day_id" v-model="num_day"></b-form-input>
-            </b-col>
-          </b-row>
-          <b-button pill variant="primary" :disabled="!fileRecordsForUpload.length" @click="uploadFiles()">
+          <b-button pill variant="primary" :disabled="!fileRecordsForUpload.length" @click="modalShow = !modalShow">
           Upload {{ fileRecordsForUpload.length }} files
           </b-button>
+
+          <b-modal v-model="modalShow" ref="modal-day" hide-footer title="Enter Day info">
+            <div class="d-block text-center">
+              <h3>Day</h3>
+              <b-row align-h="center">
+                <b-col sm="2">
+                <b-form-input type="number" class="form-control" size="sm" id="num_day_id" v-model="num_day"></b-form-input>
+                </b-col>
+              </b-row>
+            </div>
+            <b-button class="mt-2" variant="outline-danger" block @click="uploadFiles()">Upload</b-button>
+          </b-modal>
+
         </b-container>
         <br>
         <!--<p>Step 2. after uploading, calculate cohort data by hour, poke</p>!-->
@@ -161,7 +166,8 @@ export default {
       acq_table_disp: [],
       acq_table_test_type: [],
       acq_table_ready: false,
-      dropdown_cohort_text: 'Select Cohort'
+      dropdown_cohort_text: 'Select Cohort',
+      modalShow: false
     }
   },
   methods: {
@@ -319,6 +325,7 @@ export default {
     },
     // for uploader
     async uploadFiles () {
+      this.modalShow = false
       // Using the default uploader. You may use another uploader instead.
       let result = await this.$refs.vueFileAgent.upload(this.uploadUrl, this.uploadHeaders, this.fileRecordsForUpload)
       // Reset queue
