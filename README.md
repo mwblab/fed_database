@@ -51,6 +51,9 @@ access website
 
 https://django-extensions.readthedocs.io/en/latest/runscript.html
 
+## access db web
+
+http://neurallab:8080/?server=db&username=automiceuser&db=automicedb
 
 # Dev issue
 
