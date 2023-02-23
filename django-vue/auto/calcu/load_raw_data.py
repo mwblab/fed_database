@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils import timezone
 import pandas as pd
 import pytz
@@ -65,9 +65,25 @@ def get_mouse_obj(csv_path, cohort_id):
 
 # tbd: key error handling
 def import_fed_csv(csv_path, ret_mouse, num_day):
+    cut_off_hr = 8
+    start_timestamp = 0
+    # parse test_type
+    file_name = os.path.basename(csv_path)
+    file_name_wo_ext = os.path.splitext(file_name)[0]
+    file_name_sp = file_name_wo_ext.split("_")
+    test_type = file_name_sp[-1]
+    if len(test_type) >= 5 and len(test_type) <= 8:
+        test_type = file_name_sp[-2]
+    if test_type in ['PR', 'QU', 'FR3', 'FR3R', 'EXT', 'REI']:
+        # insert
+        fdtt = FedDataTestType(testType=test_type, fedNumDay=num_day, mouse=ret_mouse)
+        fdtt.save()
+        # set cut_off
+        if test_type in ['QU', 'EXT']:
+            cut_off_hr = 4
+
 
     f = pd.read_csv(csv_path)
-
     for i in range(f.shape[0]):
         r = f.iloc[i,:]
         #print(r.index)
@@ -94,20 +110,15 @@ def import_fed_csv(csv_path, ret_mouse, num_day):
         else:
             rt = int(rt)
         
-        fd = FedDataRaw(actTimestamp=str2datetime(r[0]), actNumDay=num_day, deviceNumber=r[1], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
-        fd.save()
+        current_timestamp = str2datetime(r[0])
+        if i == 0:
+            start_timestamp = current_timestamp
+            fd = FedDataRaw(actTimestamp=current_timestamp, actNumDay=num_day, deviceNumber=r[1], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
+            fd.save()
+        elif current_timestamp < start_timestamp + timedelta(hours=cut_off_hr):
+            fd = FedDataRaw(actTimestamp=current_timestamp, actNumDay=num_day, deviceNumber=r[1], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
+            fd.save()
 
-    # get filename
-    file_name = os.path.basename(csv_path)
-    file_name_wo_ext = os.path.splitext(file_name)[0]
-    file_name_sp = file_name_wo_ext.split("_")
-    test_type = file_name_sp[-1]
-    if len(test_type) >= 5 and len(test_type) <= 8:
-        test_type = file_name_sp[-2]
-    if test_type in ['PR', 'QU', 'FR3', 'FR3R', 'EXT', 'REI']:
-        # insert
-        fdtt = FedDataTestType(testType=test_type, fedNumDay=num_day, mouse=ret_mouse)
-        fdtt.save()
 
 # tbd: split error handling
 def str2datetime(str):
