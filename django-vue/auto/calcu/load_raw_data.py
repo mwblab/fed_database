@@ -74,12 +74,12 @@ def import_fed_csv(csv_path, ret_mouse, num_day):
     test_type = file_name_sp[-1]
     if len(test_type) >= 5 and len(test_type) <= 8:
         test_type = file_name_sp[-2]
-    if test_type in ['PR', 'QU', 'FR3', 'FR3R', 'EXT', 'REI']:
+    if test_type in ['FR1', 'FR3', '3R', 'PR', '3R_PR', 'PR_X', '3R_PR_X', 'QU', '3R_QU', 'QU_X', '3R_QU_X', 'E', 'RE']:
         # insert
         fdtt = FedDataTestType(testType=test_type, fedNumDay=num_day, mouse=ret_mouse)
         fdtt.save()
         # set cut_off
-        if test_type in ['QU', 'EXT']:
+        if test_type in ['QU', 'QU_X', 'E']:
             cut_off_hr = 4
 
 
