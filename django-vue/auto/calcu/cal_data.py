@@ -245,7 +245,8 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
 
             has_shown_first_3R_PR_QU_X = 0
             has_shown_first_RE = 0
-            is_first_E = 0
+            has_shown_first_E = 0
+            pre_day_avg_pokes = 0
 
             # for each day
             for feddata_num_day_index in range(pick_num_day_start, pick_num_day_end+1):
@@ -257,6 +258,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                 if feddata_mouse_day:
                     # day filter for num_p_day
                     cur_day_count = feddata_mouse_day[0].pelletCount
+                    cur_day_right_pokes = feddata_mouse_day[0].rightPokeCount
                     thres_raw[NUM_P_DAY*pick_num_day_total+feddata_num_day_offset] = cur_day_count
                     if cur_day_count >= feddata_threshold[NUM_P_DAY][mouse_thres_index]:
                         thres_binary[NUM_P_DAY*pick_num_day_total+feddata_num_day_offset] = 1
@@ -304,6 +306,25 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                                 pre_day_count = prepre_day_from_cohort[-1].pelletCount
                             has_shown_first_RE = 1
 
+                        # if cur=E, avg the last 4 (3R_QU/X) 
+                        elif test_type_cur and (
+                                test_type_cur[0].testType == "E"
+                                ) and has_shown_first_E == 0:
+                            # get the last 4
+                            prepre_day_from_cohort = FedDataByDay.objects.raw('SELECT MAX(`auto_feddatabyday`.rightPokeCount) as rightPokeCount, MAX(`auto_feddatabyday`.id) as id from `auto_feddatabyday` INNER JOIN `auto_feddatatesttype` ON `auto_feddatabyday`.mouse_id = `auto_feddatatesttype`.mouse_id AND `auto_feddatabyday`.fedNumDay = `auto_feddatatesttype`.fedNumDay WHERE (`auto_feddatatesttype`.testType = "3R_QU_X" OR `auto_feddatatesttype`.testType = "3R_QU") AND (`auto_feddatabyday`.mouse_id = %d) AND (`auto_feddatabyday`.fedNumDay < %d ) GROUP BY `auto_feddatabyday`.fedNumDay, `auto_feddatabyday`.mouse_id ORDER BY `auto_feddatabyday`.fedNumDay DESC LIMIT 4' % (mouse.id, feddata_num_day_index) )
+                            #for item in prepre_day_from_cohort:
+                            #    print(item.__dict__)
+                            # average
+                            if prepre_day_from_cohort:
+                                count=0
+                                pre_day_avg_pokes=0
+                                for item in prepre_day_from_cohort:
+                                    pre_day_avg_pokes += item.rightPokeCount 
+                                    count += 1
+                                pre_day_avg_pokes = pre_day_avg_pokes / count # right pokes
+                                #print(pre_day_avg_pokes)
+                            has_shown_first_E = 1
+
                         # if pre=QU/X, PR/X, skip pre
                         elif test_type_pre and (
                                 test_type_pre[0].testType == "QU" or test_type_pre[0].testType == "QU_X" 
@@ -315,12 +336,22 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                                 pre_day_count = prepre_day_from_cohort[0].pelletCount
                         
                         # calculate max/min threshold
-                        max_pre_day_count = pre_day_count + pre_day_count*feddata_threshold[STAB_YES][mouse_thres_index]
-                        min_pre_day_count = pre_day_count - pre_day_count*feddata_threshold[STAB_YES][mouse_thres_index]
-                        thres_raw[STAB_YES*pick_num_day_total+feddata_num_day_offset] = "%d(%d-%d)" % (cur_day_count, max_pre_day_count, min_pre_day_count)
-                        if cur_day_count >= min_pre_day_count and cur_day_count <= max_pre_day_count:
-                            thres_binary[STAB_YES*pick_num_day_total+feddata_num_day_offset] = 1
-                            acq_table_count += 1
+                        if test_type_cur and (
+                            test_type_cur[0].testType == "E" 
+                            ) and has_shown_first_E == 1:
+                            max_pre_day_pokes = pre_day_avg_pokes*feddata_threshold[STAB_YES][mouse_thres_index]
+                            min_pre_day_pokes = 0
+                            thres_raw[STAB_YES*pick_num_day_total+feddata_num_day_offset] = "%d(%d-%d)" % (cur_day_right_pokes, max_pre_day_pokes, min_pre_day_pokes)
+                            if cur_day_right_pokes <= max_pre_day_pokes: 
+                                thres_binary[STAB_YES*pick_num_day_total+feddata_num_day_offset] = 1
+                                acq_table_count += 1
+                        else:
+                            max_pre_day_count = pre_day_count + pre_day_count*feddata_threshold[STAB_YES][mouse_thres_index]
+                            min_pre_day_count = pre_day_count - pre_day_count*feddata_threshold[STAB_YES][mouse_thres_index]
+                            thres_raw[STAB_YES*pick_num_day_total+feddata_num_day_offset] = "%d(%d-%d)" % (cur_day_count, max_pre_day_count, min_pre_day_count)
+                            if cur_day_count >= min_pre_day_count and cur_day_count <= max_pre_day_count:
+                                thres_binary[STAB_YES*pick_num_day_total+feddata_num_day_offset] = 1
+                                acq_table_count += 1
 
                     # end day acc
                     cur_day_poke_acc = feddata_mouse_day[0].pokeAcc
