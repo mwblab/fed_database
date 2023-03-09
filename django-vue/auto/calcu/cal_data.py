@@ -242,6 +242,11 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
         thres_raw = [0] * (len(feddata_datatype)* (pick_num_day_total))
         thres_binary = [0] * (len(feddata_datatype)* (pick_num_day_total))
         if mouse_thres_index != -1: # either male or female
+
+            is_first_3R_PR_QU_X = 0
+            is_first_RE = 0
+            is_first_E = 0
+
             for feddata_num_day_index in range(pick_num_day_start, pick_num_day_end+1):
                 feddata_num_day_offset = feddata_num_day_index-pick_num_day_start
     
@@ -257,20 +262,33 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                         acq_table_count += 1
 
                     # get pre day count for stability
-                    thres_raw[STAB_YES*pick_num_day_total+feddata_num_day_offset] = cur_day_count
-                    if feddata_num_day_offset > 0: #not the first one
-                        test_type = FedDataTestType.objects.filter(mouse=mouse, fedNumDay=feddata_num_day_index-1)
-                        
-                        # default: compare previous day (FR1, FR3, 3R)
-                        pre_day_count = thres_raw[NUM_P_DAY*pick_num_day_total+(feddata_num_day_offset-1)]
 
-                        # if QU/X, PR/X
+                    # set current day pellet count
+                    thres_raw[STAB_YES*pick_num_day_total+feddata_num_day_offset] = cur_day_count
+
+                    # default: compare previous day (FR1, FR3, 3R, 3R_PR/X, 3R_QU/X)
+                    if feddata_num_day_offset >= 0: 
+                        pre_day_count = 0
+                        if feddata_num_day_offset == 0:
+                            if feddata_num_day_index > 0:
+                                pre_day_from_cohort = FedDataByDay.objects.filter(mouse=mouse, fedNumDay=feddata_num_day_index-1)
+                                pre_day_count = pre_day_from_cohort[0].pelletCount 
+                        else:
+                            pre_day_count = thres_raw[NUM_P_DAY*pick_num_day_total+(feddata_num_day_offset-1)]
+
+                        # if pre=QU/X, PR/X, skip pre
                         #if feddata_num_day_index-1 > 0:
-                        if test_type and (test_type[0].testType == "QU" or test_type[0].testType == "QU_X" or test_type[0].testType == "PR" or test_type[0].testType == "PR_X"):
-                            if feddata_num_day_offset-1 > 0: 
-                                pre_day_count = thres_raw[NUM_P_DAY*pick_num_day_total+(feddata_num_day_offset-2)]
-                            else:
-                                pre_day_count = 0
+                        test_type_pre = FedDataTestType.objects.filter(mouse=mouse, fedNumDay=feddata_num_day_index-1)
+                        if test_type_pre and (
+                                test_type_pre[0].testType == "QU" or test_type_pre[0].testType == "QU_X" 
+                                or test_type_pre[0].testType == "PR" or test_type_pre[0].testType == "PR_X"
+                                ):
+                            # retrieve pre-pre day
+                            prepre_day_from_cohort = FedDataByDay.objects.filter(mouse=mouse, fedNumDay=feddata_num_day_index-2)
+                            if prepre_day_from_cohort:
+                                pre_day_count = prepre_day_from_cohort[0].pelletCount
+                        
+                        # calculate max/min threshold
                         max_pre_day_count = pre_day_count + pre_day_count*feddata_threshold[STAB_YES][mouse_thres_index]
                         min_pre_day_count = pre_day_count - pre_day_count*feddata_threshold[STAB_YES][mouse_thres_index]
                         thres_raw[STAB_YES*pick_num_day_total+feddata_num_day_offset] = "%d(%d-%d)" % (cur_day_count, max_pre_day_count, min_pre_day_count)
