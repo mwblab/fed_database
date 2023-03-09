@@ -259,11 +259,14 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                     # get pre day count for stability
                     thres_raw[STAB_YES*pick_num_day_total+feddata_num_day_offset] = cur_day_count
                     if feddata_num_day_offset > 0: #not the first one
-                        pre_day_count = thres_raw[NUM_P_DAY*pick_num_day_total+(feddata_num_day_offset-1)]
-                        # if QU, PR
-                        #if feddata_num_day_index-1 > 0:
                         test_type = FedDataTestType.objects.filter(mouse=mouse, fedNumDay=feddata_num_day_index-1)
-                        if test_type and (test_type[0].testType == "QU" or test_type[0].testType == "PR"):
+                        
+                        # default: compare previous day (FR1, FR3, 3R)
+                        pre_day_count = thres_raw[NUM_P_DAY*pick_num_day_total+(feddata_num_day_offset-1)]
+
+                        # if QU/X, PR/X
+                        #if feddata_num_day_index-1 > 0:
+                        if test_type and (test_type[0].testType == "QU" or test_type[0].testType == "QU_X" or test_type[0].testType == "PR" or test_type[0].testType == "PR_X"):
                             if feddata_num_day_offset-1 > 0: 
                                 pre_day_count = thres_raw[NUM_P_DAY*pick_num_day_total+(feddata_num_day_offset-2)]
                             else:
