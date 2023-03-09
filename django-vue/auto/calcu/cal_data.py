@@ -244,7 +244,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
         if mouse_thres_index != -1: # either male or female
 
             has_shown_first_3R_PR_QU_X = 0
-            is_first_RE = 0
+            has_shown_first_RE = 0
             is_first_E = 0
 
             # for each day
@@ -278,10 +278,10 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                         else:
                             pre_day_count = thres_raw[NUM_P_DAY*pick_num_day_total+(feddata_num_day_offset-1)]
 
-                        # check current test_type
-                        # if cur=3R_QU/X, 3R_PR/X, skip pre
                         test_type_cur = FedDataTestType.objects.filter(mouse=mouse, fedNumDay=feddata_num_day_index)
                         test_type_pre = FedDataTestType.objects.filter(mouse=mouse, fedNumDay=feddata_num_day_index-1)
+                        # check current test_type
+                        # if cur=3R_QU/X, 3R_PR/X, skip pre
                         if test_type_cur and (
                                 test_type_cur[0].testType == "3R_QU" or test_type_cur[0].testType == "3R_QU_X" 
                                 or test_type_cur[0].testType == "3R_PR" or test_type_cur[0].testType == "3R_PR_X"
@@ -291,6 +291,18 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                             if prepre_day_from_cohort:
                                 pre_day_count = prepre_day_from_cohort[0].pelletCount
                             has_shown_first_3R_PR_QU_X = 1
+
+                        # if cur=RE, looks for the last 3R_QU/X
+                        elif test_type_cur and ( 
+                                test_type_cur[0].testType == "RE"
+                                ) and has_shown_first_RE == 0:
+                            # retrieve the last 3R_QU/X
+                            prepre_day_from_cohort = FedDataByDay.objects.raw('SELECT `auto_feddatabyday`.pelletCount, `auto_feddatabyday`.fedNumDay, `auto_feddatabyday`.mouse_id, `auto_feddatabyday`.id from `auto_feddatabyday` INNER JOIN `auto_feddatatesttype` ON `auto_feddatabyday`.mouse_id = `auto_feddatatesttype`.mouse_id AND `auto_feddatabyday`.fedNumDay = `auto_feddatatesttype`.fedNumDay WHERE (`auto_feddatatesttype`.testType = "3R_QU_X" OR `auto_feddatatesttype`.testType = "3R_QU") AND (`auto_feddatabyday`.mouse_id = %d) AND (`auto_feddatabyday`.fedNumDay < %d ) ORDER BY `auto_feddatabyday`.fedNumDay ' % (mouse.id, feddata_num_day_index) )
+                            #for item in prepre_day_from_cohort:
+                            #    print(item.__dict__)
+                            if prepre_day_from_cohort:
+                                pre_day_count = prepre_day_from_cohort[-1].pelletCount
+                            has_shown_first_RE = 1
 
                         # if pre=QU/X, PR/X, skip pre
                         elif test_type_pre and (
