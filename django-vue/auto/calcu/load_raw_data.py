@@ -33,28 +33,28 @@ def run():
             # import csv
             import_fed_csv(file_fp, ret_mouse)
 
-
+# sample: FED###_MMDDYY_D#_CODE
 def get_mouse_obj(csv_path, cohort_id):
-    f = pd.read_csv(csv_path)
-    r = f.iloc[0,:]
-    devNum = r[1]
-            
+    file_name = os.path.basename(csv_path)
+    file_name_wo_ext = os.path.splitext(file_name)[0]
+    file_name_sp = file_name_wo_ext.split("_")
+
     try:
         #q = Mouse.objects.select_related('fed').get(fedDisplayName = "FED%03d" % devNum )
-        ret_fed = Fed.objects.get(fedDisplayName = "FED%03d" % devNum, cohort_id = cohort_id)
+        ret_fed = Fed.objects.get(fedDisplayName = "%s" % file_name_sp[0], cohort_id = cohort_id)
         ret_mouse = Mouse.objects.get(fed=ret_fed)
         return ret_mouse
     except Fed.DoesNotExist as err: 
         # insert new fed and ini new mouse
         # what if new cohort?
-        new_fed = Fed(cohort_id = cohort_id, fedDisplayName = "FED%03d" % devNum)
+        new_fed = Fed(cohort_id = cohort_id, fedDisplayName = "%s" % file_name_sp[0])
         new_fed.save()
 
-        new_mouse = Mouse( mouseDisplayName="Cage.Animal", genotype="", fed=new_fed, dob=timezone.make_aware(datetime.now()) )
+        new_mouse = Mouse( mouseDisplayName="Cage.Animal", genotype="WT", fed=new_fed, dob=timezone.make_aware(datetime.now()) )
         new_mouse.save()
         return new_mouse
     except Mouse.DoesNotExist as err:
-        new_mouse = Mouse( mouseDisplayName="Cage.Animal", genotype="", fed=ret_fed, dob=timezone.make_aware(datetime.now()) )
+        new_mouse = Mouse( mouseDisplayName="Cage.Animal", genotype="WT", fed=ret_fed, dob=timezone.make_aware(datetime.now()) )
         new_mouse.save()
         return new_mouse
     except Exception as err:
@@ -62,26 +62,46 @@ def get_mouse_obj(csv_path, cohort_id):
         raise
 
 
-
+# sample: FED###_MMDDYY_D#_CODE
 # tbd: key error handling
 def import_fed_csv(csv_path, ret_mouse, num_day):
     cut_off_hr = 8
     start_timestamp = 0
-    # parse test_type
+
+    # parse test_type, day, mmddyy
     file_name = os.path.basename(csv_path)
     file_name_wo_ext = os.path.splitext(file_name)[0]
-    file_name_sp = file_name_wo_ext.split("_")
-    test_type = file_name_sp[-1]
-    if len(test_type) >= 5 and len(test_type) <= 8:
-        test_type = file_name_sp[-2]
+    file_name_sp = file_name_wo_ext.split("_", 3)
+    date_string = file_name_sp[1]
+
+    day_string = file_name_sp[2]
+    num_day = int(day_string[1:])
+
+    # deal with upload random suffix
+    test_type_sp = file_name_sp[-1].split("_")
+    if len(test_type_sp[-1]) >= 5 and len(test_type_sp[-1]) <= 8:
+        test_type = "_".join(test_type_sp[:-1])
+    else:
+        test_type = "_".join(test_type_sp)
     if test_type in ['FR1', 'FR3', '3R', 'PR', '3R_PR', 'PR_X', '3R_PR_X', 'QU', '3R_QU', 'QU_X', '3R_QU_X', 'E', 'RE']:
-        # insert
-        fdtt = FedDataTestType(testType=test_type, fedNumDay=num_day, mouse=ret_mouse)
-        fdtt.save()
+        try:
+            FedDataTestType.objects.get(fedNumDay=num_day, mouse=ret_mouse)
+        except FedDataTestType.DoesNotExist as err: 
+            # insert
+            fdtt = FedDataTestType(testType=test_type, fedNumDay=num_day, mouse=ret_mouse)
+            fdtt.save()
+        except FedDataTestType.MultipleObjectsReturned as err:
+            pass
+        except Exception as err:
+            print(f"Unexpected {err=}, {type(err)=}")
+            raise
+
         # set cut_off
         if test_type in ['QU', 'QU_X', 'E']:
             cut_off_hr = 4
 
+    #print(num_day)
+    #print(test_type)
 
     f = pd.read_csv(csv_path)
     for i in range(f.shape[0]):
@@ -110,23 +130,23 @@ def import_fed_csv(csv_path, ret_mouse, num_day):
         else:
             rt = int(rt)
         
-        current_timestamp = str2datetime(r[0])
+        current_timestamp = str2datetime(r[0], date_string)
         if i == 0:
             start_timestamp = current_timestamp
-            fd = FedDataRaw(actTimestamp=current_timestamp, actNumDay=num_day, deviceNumber=r[1], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
+            fd = FedDataRaw(actTimestamp=current_timestamp, actNumDay=num_day, deviceNumber=file_name_sp[0][3:], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
             fd.save()
         elif current_timestamp < start_timestamp + timedelta(hours=cut_off_hr):
-            fd = FedDataRaw(actTimestamp=current_timestamp, actNumDay=num_day, deviceNumber=r[1], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
+            fd = FedDataRaw(actTimestamp=current_timestamp, actNumDay=num_day, deviceNumber=file_name_sp[0][3:], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
             fd.save()
 
 
 # tbd: split error handling
-def str2datetime(str):
+def str2datetime(str, date_string):
     s1 = str.split(" ")
-    date_sp = s1[0].split("/")
+    #date_sp = s1[0].split("/")
     time_sp = s1[1].split(":")
 
     # https://hunj.dev/django-timezone-aware-datetime-objects/
-    return timezone.make_aware(datetime(int(date_sp[2]), int(date_sp[0]), int(date_sp[1]), int(time_sp[0]), int(time_sp[1]), int(time_sp[2]), microsecond=0))
+    return timezone.make_aware(datetime(2000+int(date_string[4:6]), int(date_string[0:2]), int(date_string[2:4]), int(time_sp[0]), int(time_sp[1]), int(time_sp[2]), microsecond=0))
 
 
