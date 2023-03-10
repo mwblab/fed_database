@@ -3,6 +3,7 @@ from datetime import datetime, date, timedelta
 from django.utils import timezone
 from django.db.models import Avg, F, RowRange, Window, Max
 from django.db.models.functions import TruncDate
+from django.shortcuts import get_object_or_404
 
 NUM_P_DAY=0
 END_DAY_ACC=1
@@ -450,4 +451,29 @@ def get_cohort_list_fun(study_id):
 
     return output
 
+def get_mouse_list_fun(cohort_id):
+    output_mouse_list = []
+    mouses = Mouse.objects.select_related('fed').filter(fed__cohort_id = cohort_id)
+    if mouses:
+        for mouse in mouses:
+            one_mouse = {}
+            one_mouse['mouse_id'] = mouse.id
+            one_mouse['mouse_name'] = mouse.mouseDisplayName
+            one_mouse['mouse_genotype'] = mouse.genotype
+            one_mouse['mouse_sex'] = mouse.sex
+            one_mouse['mouse_FED'] = mouse.fed.fedDisplayName
+            output_mouse_list.append(one_mouse)
+    return output_mouse_list
+
+def put_mouse_list_fun(mouse_list):
+    for mouse in mouse_list:
+        # update each mouse
+        mouse_obj = Mouse.objects.filter(id=mouse['mouse_id'])
+        mouse_inst = get_object_or_404(mouse_obj)
+        mouse_inst.mouseDisplayName = mouse['mouse_name']
+        mouse_inst.genotype = mouse['mouse_genotype']
+        mouse_inst.sex = mouse['mouse_sex']
+        mouse_inst.save()
+
+    return []
 
