@@ -64,7 +64,7 @@ def get_mouse_obj(csv_path, cohort_id):
 
 # sample: FED###_MMDDYY_D#_CODE
 # tbd: key error handling
-def import_fed_csv(csv_path, ret_mouse, num_day):
+def import_fed_csv(csv_path, ret_mouse):
     cut_off_hr = 8
     start_timestamp = 0
 
