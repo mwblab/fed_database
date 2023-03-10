@@ -6,7 +6,7 @@
            <b-row align-h="center">
                 <b-col sm="2">
                     <b-dropdown variant="outline-primary" class="m-2" :text="dropdown_cohort_text" v-if="options.length > 0">
-                         <b-dropdown-item v-for="option in options" :key="option.cohort_id" :value="option.cohort_id" @click="setCohort(option.cohort_id, option.cohort_name)">{{ 'Cohort ' + option.cohort_id + ': ' + option.cohort_name }}</b-dropdown-item>
+                         <b-dropdown-item v-for="option in options" :key="option.cohort_id" :value="option.cohort_id" @click="setCohort(option.cohort_id, option.cohort_name)">{{ 'Cohort: ' + option.cohort_name }}</b-dropdown-item>
                     </b-dropdown>
                 </b-col>
            </b-row>
@@ -172,7 +172,7 @@ export default {
   methods: {
     async setCohort (num, name) {
       this.cohort_id = num
-      this.dropdown_cohort_text = 'Cohort ' + num + ': ' + name
+      this.dropdown_cohort_text = 'Cohort: ' + name
     },
     makeToast (msg, append = true) {
       this.$bvToast.toast(msg, {
