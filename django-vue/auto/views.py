@@ -105,5 +105,28 @@ def get_cohort_list(request):
             print(e)
             return HttpResponse(status=400) 
 
+@csrf_exempt
+def get_mouse_list(request):
+    if(request.method == 'POST'):
+        try:
+            # decode json
+            data = JSONParser().parse(request) 
+            ret = cal_data.get_mouse_list_fun(data['cohort_id'])
+            return JsonResponse(ret, safe=False, status=201)
+        except Exception as e:
+            print(e)
+            return HttpResponse(status=400) 
+
+@csrf_exempt
+def put_mouse_list(request):
+    if(request.method == 'POST'):
+        try:
+            # decode json
+            data = JSONParser().parse(request) 
+            ret = cal_data.put_mouse_list_fun(data)
+            return JsonResponse(ret, safe=False, status=201)
+        except Exception as e:
+            print(e)
+            return HttpResponse(status=400) 
 
 
