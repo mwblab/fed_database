@@ -437,3 +437,17 @@ def get_feddate_array_name(feddata_day, pick_num_day_start, pick_num_day_end):
             feddate_day_arr_name.append("d%d" % (pick_num_day))
     return feddate_day_arr_name
 
+def get_cohort_list_fun(study_id):
+    output = []
+    co = Cohort.objects.filter(study_id=study_id)
+    if co:
+        for item in co:
+            one_co = {}
+            one_co['cohort_id'] = item.id
+            one_co['cohort_name'] = item.cohortDisplayName
+            one_co['cohort_desc'] = item.cohortDesc
+            output.append( one_co )
+
+    return output
+
+

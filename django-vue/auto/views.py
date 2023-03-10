@@ -95,3 +95,15 @@ def proc_acq(request):
             print(e)
             return HttpResponse(status=400) 
 
+@csrf_exempt
+def get_cohort_list(request):
+    if(request.method == 'GET'):
+        try:
+            ret = cal_data.get_cohort_list_fun(1)
+            return JsonResponse(ret, safe=False, status=201)
+        except Exception as e:
+            print(e)
+            return HttpResponse(status=400) 
+
+
+

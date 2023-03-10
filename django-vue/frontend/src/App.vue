@@ -1,11 +1,16 @@
 <template>
   <div id="app">
-    <Studies />
+
+    <router-link to="/">Home</router-link>
+    <router-link to="/edit">Edit</router-link>
+    <router-view></router-view>
+
   </div>
 </template>
 
 <script>
 import Studies from './components/Studies.vue'
+
 export default {
   name: 'App',
   components: {
