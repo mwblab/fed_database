@@ -63,7 +63,7 @@ def proc_data_load(request):
             for f in file_list: 
                 file_path = "media/" + f
                 ret_mouse = load_raw_data.get_mouse_obj(file_path , cohort_id)
-                load_raw_data.import_fed_csv(file_path, ret_mouse, num_day)
+                load_raw_data.import_fed_csv(file_path, ret_mouse)
             return HttpResponse(status=201) 
         except Exception as e:
             print(e)

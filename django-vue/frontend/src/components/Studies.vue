@@ -37,7 +37,7 @@
         ></VueFileAgent>
         <b-container class="bv-example-day">
 
-          <b-button pill variant="primary" :disabled="!fileRecordsForUpload.length" @click="modalShow = !modalShow">
+          <b-button pill variant="primary" :disabled="!fileRecordsForUpload.length" @click="uploadFiles()">
           Upload {{ fileRecordsForUpload.length }} files
           </b-button>
 
