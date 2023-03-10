@@ -1,11 +1,12 @@
 <template>
     <div class="edit_container">
 
+      <h2>Edit mouse data</h2>
         <b-container class="bv-example-cohort">
            <b-row align-h="center">
                 <b-col sm="2">
                     <b-dropdown variant="outline-primary" class="m-2" :text="dropdown_cohort_text" v-if="options.length > 0">
-                         <b-dropdown-item v-for="option in options" :key="option.cohort_id" :value="option.cohort_id" @click="setCohort(option.cohort_id, option.cohort_name)">{{ 'Cohort ' + option.cohort_id + ': ' + option.cohort_name }}</b-dropdown-item>
+                         <b-dropdown-item v-for="option in options" :key="option.cohort_id" :value="option.cohort_id" @click="setCohort(option.cohort_id, option.cohort_name)">{{ 'Cohort: ' + option.cohort_name }}</b-dropdown-item>
                     </b-dropdown>
                 </b-col>
            </b-row>
@@ -18,6 +19,12 @@
       </b-table>
       <p v-if="mouse_list.length > 0">Sex: Set 1 (Male) or 2 (Female) to show on the acquisition result. Set 0 if no show.</p>
       <button v-if="mouse_list.length > 0" v-on:click="saveMouseList">Save</button>
+
+      <hr>
+
+      <h2>Add New Cohort</h2>
+      <input id="new_cohort" type="text" :style="{ width: '250px' }" v-model="new_cohort_name" placeholder="New Cohort Name (20chars)">
+      <button v-if="new_cohort_name" v-on:click="addNewCohort">Add</button>
 
     </div>
 </template>
@@ -43,13 +50,15 @@ export default {
         { key: 'mouse_name', label: 'Mouse Name', editable: true },
         { key: 'mouse_sex', label: 'Sex', editable: true },
         { key: 'mouse_genotype', label: 'Genotype', editable: true }
-      ]
+      ],
+      // add new cohort
+      new_cohort_name: null
     }
   },
   methods: {
     async setCohort (num, name) {
       this.selectedOption = num
-      this.dropdown_cohort_text = 'Cohort ' + num + ': ' + name
+      this.dropdown_cohort_text = 'Cohort: ' + name
       await this.updateMouseList(num)
     },
     async updateMouseList (num) {
@@ -82,6 +91,26 @@ export default {
       } catch (error) {
         await this.makeToast('Save: Failed!')
         console.log(error)
+      }
+    },
+    async addNewCohort () {
+      if (this.new_cohort_name) {
+        try {
+          const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.new_cohort_name)
+          }
+          const response = await fetch('http://128.173.224.170:3000/api/auto/put_new_cohort/', requestOptions)
+          if (response.status === 201) {
+            await this.makeToast('Add New Cohort: Successful!')
+          } else {
+            await this.makeToast('Add New Cohort: Failed!')
+          }
+        } catch (error) {
+          await this.makeToast('Add New Cohort: Failed!')
+          console.log(error)
+        }
       }
     },
     makeToast (msg, append = true) {

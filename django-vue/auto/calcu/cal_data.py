@@ -451,6 +451,12 @@ def get_cohort_list_fun(study_id):
 
     return output
 
+def put_new_cohort_fun(cohort_name):
+    c = Cohort(cohortDisplayName=cohort_name, cohortDesc='', study_id=1, startDate='2022-03-05', endDate='2022-11-24' )
+    c.save()
+
+    return []
+
 def get_mouse_list_fun(cohort_id):
     output_mouse_list = []
     mouses = Mouse.objects.select_related('fed').filter(fed__cohort_id = cohort_id)
