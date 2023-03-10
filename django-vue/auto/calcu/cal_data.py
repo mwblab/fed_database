@@ -195,8 +195,11 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
     pick_num_day_end = FedDataByDay.objects.filter(mouse__fed__cohort_id=cohort_id, fedDate=pick_date)
     if not pick_num_day_end:
         last_day = FedDataByDay.objects.filter(mouse__fed__cohort_id=cohort_id).order_by('fedDate').last()
-        pick_date = last_day.fedDate
-        pick_num_day_end = last_day.fedNumDay
+        if last_day:
+            pick_date = last_day.fedDate
+            pick_num_day_end = last_day.fedNumDay
+        else:
+            return []
     else:
         pick_num_day_end = pick_num_day_end[0].fedNumDay
 
