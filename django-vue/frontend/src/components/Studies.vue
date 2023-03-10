@@ -3,21 +3,17 @@
     <div class="studies_container">
 
         <b-container class="bv-example-cohort">
-           <!--<p>Step 1. choose one cohort</p>!-->
            <b-row align-h="center">
-                <!--<b-col sm="2">
-                  <label for="input-default">Cohort</label>
-                </b-col>!-->
                 <b-col sm="2">
-                  <!--<b-form-input  type="number" class="form-control" size="sm" id="cohort_id" v-model="cohort_id"></b-form-input>!-->
-                  <b-dropdown id="dropdown-cohort" :text="dropdown_cohort_text" variant="outline-primary" class="m-2">
-                     <b-dropdown-item @click="setCohort(1)">Cohort 1</b-dropdown-item>
-                  </b-dropdown>
+                    <b-dropdown variant="outline-primary" class="m-2" :text="dropdown_cohort_text" v-if="options.length > 0">
+                         <b-dropdown-item v-for="option in options" :key="option.cohort_id" :value="option.cohort_id" @click="setCohort(option.cohort_id, option.cohort_name)">{{ 'Cohort ' + option.cohort_id + ': ' + option.cohort_name }}</b-dropdown-item>
+                    </b-dropdown>
                 </b-col>
            </b-row>
         </b-container>
 
         <br>
+        <div v-if="cohort_id > 0">
         <VueFileAgent
           ref="vueFileAgent"
           :theme="'list'"
@@ -137,6 +133,7 @@
           <b-table hover :items="acq_table_test_type"></b-table>
         </div>
 
+        </div>
     </div>
 </template>
 
@@ -145,7 +142,7 @@ export default {
   data () {
     return {
       studies: [''],
-      cohort_id: 1,
+      cohort_id: -1,
       num_day: 21,
       fileRecords: [],
       uploadUrl: 'http://128.173.224.170:3000/api/files/',
@@ -166,14 +163,16 @@ export default {
       acq_table_disp: [],
       acq_table_test_type: [],
       acq_table_ready: false,
+      // for dropdown cohort list
+      options: [],
       dropdown_cohort_text: 'Select Cohort',
       modalShow: false
     }
   },
   methods: {
-    setCohort (num) {
+    async setCohort (num, name) {
       this.cohort_id = num
-      this.dropdown_cohort_text = 'Cohort ' + num
+      this.dropdown_cohort_text = 'Cohort ' + num + ': ' + name
     },
     makeToast (msg, append = true) {
       this.$bvToast.toast(msg, {
@@ -386,6 +385,22 @@ export default {
   created () {
     // Fetch tasks on page load
     this.getData()
+  },
+  mounted () {
+    // Make the request to fetch the options
+    fetch('http://128.173.224.170:3000/api/auto/get_cohort_list/')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok')
+        }
+        return response.json()
+      })
+      .then(data => {
+        this.options = data
+      })
+      .catch(error => {
+        console.error('There was a problem fetching the options:', error)
+      })
   }
 }
 </script>
