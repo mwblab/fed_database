@@ -22,7 +22,7 @@
           :meta="true"
           :accept="'.csv'"
           :maxSize="'500MB'"
-          :maxFiles="50"
+          :maxFiles="100"
           :helpText="'Choose fed raw csv files. only one day is allowed.'"
           :errorText="{
             type: 'Invalid file type. Only csv Allowed',
@@ -348,7 +348,8 @@ export default {
       if (response.status === 201) {
         await this.makeToast('Upload: Successful!')
       } else {
-        await this.makeToast('Upload: Failed!')
+        const edata = await response.json()
+        await this.makeToast('Upload: Failed! Error message: ' + edata.message)
       }
     },
     // add files to queue
