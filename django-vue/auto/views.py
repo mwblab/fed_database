@@ -10,6 +10,7 @@ from django.http import HttpResponse, JsonResponse
 from .serializers import TaskSerializer
 from .models import Study
 from auto.calcu import load_raw_data, cal_data
+import os, sys
 
 @csrf_exempt
 def studies(request):
@@ -54,6 +55,7 @@ def study_detail(request, pk):
 @csrf_exempt
 def proc_data_load(request): 
     if(request.method == 'POST'):
+        cur_file = ''
         try:
             # decode json
             data = JSONParser().parse(request) 
@@ -62,12 +64,18 @@ def proc_data_load(request):
             file_list = data['fileList']
             for f in file_list: 
                 file_path = "media/" + f
+                cur_file = os.path.basename(file_path)
                 ret_mouse = load_raw_data.get_mouse_obj(file_path , cohort_id)
                 load_raw_data.import_fed_csv(file_path, ret_mouse)
             return HttpResponse(status=201) 
         except Exception as e:
             print(e)
-            return HttpResponse(status=400) 
+            e_data = {
+                'error': 'Upload failure',
+                'message': 'unable to upload %s due to %s' % (cur_file,e)
+            }
+#            return HttpResponse(status=400) 
+            return JsonResponse(e_data, status=400)
 # cal
 @csrf_exempt
 def proc_cal(request):
