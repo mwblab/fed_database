@@ -346,9 +346,10 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                             max_pre_day_pokes = pre_day_avg_pokes*feddata_threshold[STAB_YES][mouse_thres_index]
                             min_pre_day_pokes = 0
                             thres_raw[STAB_YES*pick_num_day_total+feddata_num_day_offset] = "%d(%d-%d)" % (cur_day_right_pokes, max_pre_day_pokes, min_pre_day_pokes)
+                            # default E value = 0
+                            thres_binary[STAB_YES*pick_num_day_total+feddata_num_day_offset] = 0
                             if cur_day_right_pokes <= max_pre_day_pokes: 
-                                thres_binary[STAB_YES*pick_num_day_total+feddata_num_day_offset] = 1
-                                acq_table_count += 1
+                                thres_binary[STAB_YES*pick_num_day_total+feddata_num_day_offset] = 'E'
                         else:
                             max_pre_day_count = pre_day_count + pre_day_count*feddata_threshold[STAB_YES][mouse_thres_index]
                             min_pre_day_count = pre_day_count - pre_day_count*feddata_threshold[STAB_YES][mouse_thres_index]
@@ -377,6 +378,9 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                 thres_raw[ACQ_TABLE*pick_num_day_total+feddata_num_day_offset] = acq_table_count
                 if acq_table_count == feddata_threshold[ACQ_TABLE][mouse_thres_index]:
                     thres_binary[ACQ_TABLE*pick_num_day_total+feddata_num_day_offset] = 1
+                elif thres_binary[STAB_YES*pick_num_day_total+feddata_num_day_offset] == 'E':
+                    thres_binary[ACQ_TABLE*pick_num_day_total+feddata_num_day_offset] = 'E'
+
 
         if DEBUG:
             print(thres_raw)
