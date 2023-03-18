@@ -38,8 +38,12 @@ def proc_run(cohort_id):
     for m in mouse_list:
         day_set = get_day_set(m)
         for d_str in day_set: 
+            if DEBUG:
+                print("before date split")
             d_str_sp = d_str.split('-')
             d = date(year=int(d_str_sp[2]), month=int(d_str_sp[0]), day=int(d_str_sp[1]))
+            if DEBUG:
+                print("after date split")
             if DEBUG: 
                 print(m)
                 print(d)
@@ -51,6 +55,8 @@ def proc_run(cohort_id):
             if DEBUG:
                 print("cal_rolling_window")
             cal_rolling(m, d, 30)
+            if DEBUG:
+                print("end of cal_rolling_window")
 
 def get_mouse_list(cohort_id):
     qs = Mouse.objects.filter(fed__cohort_id=cohort_id)
@@ -135,6 +141,8 @@ def cal_rolling_avg(m, d):
     # get onset time
     total_qs = len(qs)
     onset_index = 16
+    if onset_index >= total_qs:
+        return
     for i in range(len(qs)):
         if qs[onset_index+i].event == 2:
             continue
