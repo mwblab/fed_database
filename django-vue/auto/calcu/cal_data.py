@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.db.models import Avg, F, RowRange, Window, Max
 from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
+from django.db.models import Count
 
 NUM_P_DAY=0
 END_DAY_ACC=1
@@ -480,6 +481,13 @@ def get_mouse_list_fun(cohort_id):
             one_mouse['mouse_genotype'] = mouse.genotype
             one_mouse['mouse_sex'] = mouse.sex
             one_mouse['mouse_FED'] = mouse.fed.fedDisplayName
+            one_mouse['mouse_FED_day'] = ""
+            # select uploaded days in this mouse
+            fedNumDays = FedDataRaw.objects.filter(mouse=mouse).values('actNumDay').annotate(dcount=Count('actNumDay')).order_by('actNumDay')
+            if fedNumDays:
+                for fedNumDay in fedNumDays:
+                    one_mouse['mouse_FED_day'] += str(fedNumDay['actNumDay']) + ","
+
             output_mouse_list.append(one_mouse)
     return output_mouse_list
 
