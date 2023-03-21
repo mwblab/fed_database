@@ -1,7 +1,7 @@
 <template>
     <div class="edit_container">
 
-      <h2>Edit mouse data</h2>
+      <h2>Edit Mouse Data</h2>
         <b-container class="bv-example-cohort">
            <b-row align-h="center">
                 <b-col sm="2">
@@ -11,20 +11,23 @@
                 </b-col>
            </b-row>
         </b-container>
-
-      <b-table v-if="mouse_list.length > 0" :items="mouse_list" :fields="fields">
-          <template v-for="field in editableFields" v-slot:[`cell(${field.key})`]="{ item }">
-            <b-input v-bind:key="field.key" v-model="item[field.key]" />
-          </template>
+      <b-table v-if="mouse_list.length > 0" hover :items="mouse_list" :fields="fields" >
+        <template v-for="field in editableFields" v-slot:[`cell(${field.key})`]="{ item }">
+          <b-input v-bind:key="field.key" v-model="item[field.key]" />
+        </template>
       </b-table>
       <p v-if="mouse_list.length > 0">Sex: Set 1 (Male) or 2 (Female) to show on the acquisition result. Set 0 if no show.</p>
-      <button v-if="mouse_list.length > 0" v-on:click="saveMouseList">Save</button>
+      <button v-if="mouse_list.length > 0" v-on:click="saveMouseList">Save Mouse Data</button>
 
+      <hr>
       <hr>
 
       <h2>Add New Cohort</h2>
       <input id="new_cohort" type="text" :style="{ width: '250px' }" v-model="new_cohort_name" placeholder="New Cohort Name (20chars)">
       <button v-if="new_cohort_name" v-on:click="addNewCohort">Add</button>
+
+      <hr>
+      <hr>
 
     </div>
 </template>
@@ -49,7 +52,8 @@ export default {
         { key: 'mouse_FED', label: 'FED' },
         { key: 'mouse_name', label: 'Mouse Name', editable: true },
         { key: 'mouse_sex', label: 'Sex', editable: true },
-        { key: 'mouse_genotype', label: 'Genotype', editable: true }
+        { key: 'mouse_genotype', label: 'Genotype', editable: true },
+        { key: 'mouse_FED_day', label: 'FED_DAY', tdClass: 'fed_day_sty' }
       ],
       // add new cohort
       new_cohort_name: null
@@ -140,3 +144,10 @@ export default {
   }
 }
 </script>
+<style>
+.fed_day_sty{
+  width: 500px;
+  overflow: auto;
+  word-break: break-word;
+}
+</style>
