@@ -503,3 +503,21 @@ def put_mouse_list_fun(mouse_list):
 
     return []
 
+def del_mouse_data_fun(mouse_data):
+    # {'cohort_id': 7, 'del_mouse_id': '81', 'del_start_day': '30', 'del_end_day': '35'}
+    del_mouse_id = int(mouse_data['del_mouse_id'])
+    del_start_day = int(mouse_data['del_start_day'])
+    del_end_day = int(mouse_data['del_end_day'])
+    #print(mouse_data)
+
+    FedDataTestType.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
+    FedDataRolling.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
+    FedDataByHour.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
+    FedDataByDay.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
+    # remove rolling, byhour, byday
+    # remove test type
+    # remove raw
+    FedDataRaw.objects.filter(mouse_id=del_mouse_id, actNumDay__gte = del_start_day, actNumDay__lte = del_end_day).delete()
+
+    return
+
