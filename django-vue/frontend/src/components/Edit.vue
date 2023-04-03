@@ -11,6 +11,7 @@
                 </b-col>
            </b-row>
         </b-container>
+
       <b-table v-if="mouse_list.length > 0" hover :items="mouse_list" :fields="fields" >
         <template v-for="field in editableFields" v-slot:[`cell(${field.key})`]="{ item }">
           <b-input v-bind:key="field.key" v-model="item[field.key]" />
@@ -18,6 +19,16 @@
       </b-table>
       <p v-if="mouse_list.length > 0">Sex: Set 1 (Male) or 2 (Female) to show on the acquisition result. Set 0 if no show.</p>
       <button v-if="mouse_list.length > 0" v-on:click="saveMouseList">Save Mouse Data</button>
+
+      <br>
+      <br>
+      <div v-if="mouse_list.length > 0">
+      <p>Delete mouse data</p>
+      <input id="del_mouse_id" type="text" :style="{ width: '300px' }" v-model="del_mouse_id" placeholder="Mouse ID from the table below (E.g. 81)">
+      <input id="del_start_day" type="text" :style="{ width: '100px' }" v-model="del_start_day" placeholder="Start day: 30">
+      <input id="del_end_day" type="text" :style="{ width: '100px' }" v-model="del_end_day" placeholder="End day: 35">
+      <button v-if="del_mouse_id && del_start_day && del_end_day" v-on:click="delMouseData">Delete Mouse Data</button>
+      </div>
 
       <hr>
       <hr>
@@ -56,7 +67,11 @@ export default {
         { key: 'mouse_FED_day', label: 'FED_DAY', tdClass: 'fed_day_sty' }
       ],
       // add new cohort
-      new_cohort_name: null
+      new_cohort_name: null,
+      // del mouse data
+      del_mouse_id: null,
+      del_start_day: null,
+      del_end_day: null
     }
   },
   methods: {
@@ -64,6 +79,9 @@ export default {
       this.selectedOption = num
       this.dropdown_cohort_text = 'Cohort: ' + name
       await this.updateMouseList(num)
+    },
+    async refreshMouseList () {
+      await this.updateMouseList(this.selectedOption)
     },
     async updateMouseList (num) {
       try {
@@ -77,6 +95,29 @@ export default {
         this.mouse_list = data
       } catch (error) {
         console.log(error)
+      }
+    },
+    async delMouseData () {
+      if (confirm('Are you sure? Delete Mouse ID=' + this.del_mouse_id + ' data from Day ' + this.del_start_day + ' to Day ' + this.del_end_day)) {
+        try {
+          var delData = { cohort_id: this.selectedOption, del_mouse_id: this.del_mouse_id, del_start_day: this.del_start_day, del_end_day: this.del_end_day }
+          // console.log(delData)
+          const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(delData)
+          }
+          const response = await fetch('http://128.173.224.170:3000/api/auto/del_mouse_data/', requestOptions)
+          if (response.status === 201) {
+            await this.makeToast('Delete: Successful!')
+            await this.refreshMouseList()
+          } else {
+            await this.makeToast('Delete: Failed!')
+          }
+        } catch (error) {
+          await this.makeToast('Delete: Failed!')
+          console.log(error)
+        }
       }
     },
     async saveMouseList () {
@@ -108,6 +149,7 @@ export default {
           const response = await fetch('http://128.173.224.170:3000/api/auto/put_new_cohort/', requestOptions)
           if (response.status === 201) {
             await this.makeToast('Add New Cohort: Successful!')
+            await this.refreshCohortList()
           } else {
             await this.makeToast('Add New Cohort: Failed!')
           }
@@ -116,6 +158,21 @@ export default {
           console.log(error)
         }
       }
+    },
+    async refreshCohortList () {
+      fetch('http://128.173.224.170:3000/api/auto/get_cohort_list/')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok')
+          }
+          return response.json()
+        })
+        .then(data => {
+          this.options = data
+        })
+        .catch(error => {
+          console.error('There was a problem fetching the options:', error)
+        })
     },
     makeToast (msg, append = true) {
       this.$bvToast.toast(msg, {

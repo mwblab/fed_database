@@ -150,3 +150,16 @@ def put_mouse_list(request):
             return HttpResponse(status=400) 
 
 
+@csrf_exempt
+def del_mouse_data(request):
+    if(request.method == 'POST'):
+        try:
+            # decode json
+            data = JSONParser().parse(request) 
+            ret = cal_data.del_mouse_data_fun(data)
+            return JsonResponse(ret, safe=False, status=201)
+        except Exception as e:
+            print(e)
+            return HttpResponse(status=400) 
+
+
