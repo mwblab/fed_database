@@ -63,8 +63,8 @@ class FedDataByDay(models.Model):
     pelletCount = models.IntegerField(default=0)
     activePoke = models.IntegerField(default=0) # 1 for left, 2 for right
     pokeAcc = models.DecimalField(default=0.0, max_digits=7, decimal_places=6)
-    rtAvg = models.DecimalField(default=0.0, max_digits=7, decimal_places=6)
-    rtSem = models.DecimalField(default=0.0, max_digits=7, decimal_places=6)
+    rtAvg = models.DecimalField(default=0.0, max_digits=10, decimal_places=4)
+    rtSem = models.DecimalField(default=0.0, max_digits=10, decimal_places=4)
     rtPelletCount = models.IntegerField(default=0)
     fedDate = models.DateField()
     fedNumDay = models.IntegerField(default=0)
