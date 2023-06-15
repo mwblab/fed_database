@@ -81,6 +81,13 @@ class FedDataTestType(models.Model):
     fedNumDay = models.IntegerField(default=0)
     mouse = models.ForeignKey(Mouse, on_delete=models.CASCADE)
 
+class FedDataByRT(models.Model):
+    actTimestamp = models.DateTimeField()
+    pelletCount = models.IntegerField(default=0)
+    retrievalTime = models.IntegerField(default=0)
+    fedDate = models.DateField()
+    fedNumDay = models.IntegerField(default=0)
+    mouse = models.ForeignKey(Mouse, on_delete=models.CASCADE)
 
 class Data(models.Model):
     file_id = models.AutoField(primary_key=True)

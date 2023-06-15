@@ -34,6 +34,8 @@ access website
 
 ## create migration
 
+if add table, update auto/models.py
+
 `python manage.py makemigrations`
 
 `python manage.py migrate`
