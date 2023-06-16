@@ -66,6 +66,7 @@ class FedDataByDay(models.Model):
     rtAvg = models.DecimalField(default=0.0, max_digits=10, decimal_places=4)
     rtSem = models.DecimalField(default=0.0, max_digits=10, decimal_places=4)
     rtPelletCount = models.IntegerField(default=0)
+    rtRaw = models.TextField(default='')
     fedDate = models.DateField()
     fedNumDay = models.IntegerField(default=0)
     mouse = models.ForeignKey(Mouse, on_delete=models.CASCADE)
