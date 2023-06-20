@@ -479,7 +479,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                     mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw'][type_index*pick_num_day_total + day_index]
                 if type_index == ACQ_TABLE:
                     final_acq_output_tabs[0].append(mouse_row)
-                else
+                else:
                     final_acq_output_tabs[1].append(mouse_row)
             else: # for rt
                 type_index_rt = type_index-len(feddata_datatype)
