@@ -1,16 +1,21 @@
-from auto.models import Mouse, FedDataRaw, FedDataByHour, FedDataByDay, Cohort, FedDataRolling, FedDataTestType
+from auto.models import Mouse, FedDataRaw, FedDataByHour, FedDataByDay, Cohort, FedDataRolling, FedDataTestType, FedDataByRT
 from datetime import datetime, date, timedelta
 from django.utils import timezone
 from django.db.models import Avg, F, RowRange, Window, Max
 from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
+import numpy as np
 
 NUM_P_DAY=0
 END_DAY_ACC=1
 STAB_YES=2
 MAX10_ROLLING_30=3
 ACQ_TABLE=4
+RT_AVG=5
+RT_SEM=6
+RT_PC=7
+RT_RAW=8
 MALE=0
 FEMALE=1
 DEBUG=1
@@ -80,12 +85,15 @@ def get_day_set(m):
 
 def cal_hr_day(m, d):
     qs = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d)
-
     # get active poke
     active_poke = qs[0].activePoke  
     fedNumDay = qs[0].actNumDay
     onset_timestamp = qs[1].actTimestamp # onset from the second transaction
 
+    # for retrieval time
+    rt_avg, rt_sem, rt_pel, rt_raw = cal_rt_of_day(m, d, fedNumDay, onset_timestamp)
+
+    # for day and hr 
     pre_l=0
     pre_r=0
     pre_p=0
@@ -129,8 +137,11 @@ def cal_hr_day(m, d):
             else:
                 raise Exception("Invalid active_poke code.") 
 
-            fedday = FedDataByDay(leftPokeCount=qs_hr_last.leftPokeCount, rightPokeCount=qs_hr_last.rightPokeCount, pelletCount=qs_hr_last.pelletCount, activePoke=active_poke, pokeAcc=poke_acc, fedDate=d, fedNumDay=fedNumDay, mouse=m)
+            fedday = FedDataByDay(rtAvg=rt_avg, rtSem=rt_sem, rtPelletCount=rt_pel, rtRaw=rt_raw, leftPokeCount=qs_hr_last.leftPokeCount, rightPokeCount=qs_hr_last.rightPokeCount, pelletCount=qs_hr_last.pelletCount, activePoke=active_poke, pokeAcc=poke_acc, fedDate=d, fedNumDay=fedNumDay, mouse=m)
             fedday.save()
+
+
+
 
 def cal_rolling_avg(m, d):
     qs = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d)
@@ -192,7 +203,9 @@ def cal_rolling(m, d, win_size):
         fdr = FedDataRolling(pokeAcc=avg, windowSize=win_size, startTime=items[i-(win_size-1)].startTime, endTime=items[i].startTime, fedDate=d, fedNumDay=items[i].fedNumDay, mouse=m)
         fdr.save()
 
-def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num_p_day_f, cri_end_day_acc_m, cri_end_day_acc_f, cri_max_rol_avg30_m, cri_max_rol_avg30_f, cri_stab_yes_m, cri_stab_yes_f):
+
+
+def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num_p_day_f, cri_end_day_acc_m, cri_end_day_acc_f, cri_max_rol_avg30_m, cri_max_rol_avg30_f, cri_stab_yes_m, cri_stab_yes_f, cri_rt_thres_m, cri_rt_thres_f):
     window_size = 30
 
     # get start, end num_day
@@ -218,10 +231,16 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
         pick_num_day_start = 1
     pick_num_day_total = pick_num_day_end-pick_num_day_start+1
 
+    if DEBUG: 
+        print("DEBUG MSG: pick date ", pick_date)
+        print("DEBUG MSG: pick_num_day_start", pick_num_day_start)
+        print("DEBUG MSG: pick_num_day_end", pick_num_day_end)
+        print("DEBUG MSG: pick total days", pick_num_day_total)
+
     # get mice list
     mice_list = Mouse.objects.select_related('fed').filter(fed__cohort_id=cohort_id).order_by('id')
 
-    # get day
+    # get byday feddata
     feddata_cohort = FedDataByDay.objects.filter(mouse__fed__cohort_id=cohort_id, fedNumDay__gte=pick_num_day_start, fedNumDay__lte=pick_num_day_end)
     # get rolling day info, different structure
     feddata_cohort_rolling = FedDataRolling.objects.filter(mouse__fed__cohort_id=cohort_id, fedNumDay__gte=pick_num_day_start, fedNumDay__lte=pick_num_day_end, windowSize=window_size).values('fedDate', 'fedNumDay', 'mouse_id').annotate(rollMaxPokeAcc=Max('pokeAcc'))
@@ -230,7 +249,10 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
     # prepare datatype, threshold
     feddata_datatype = ['num_p_day', 'end_day_acc', 'stab_yesterday', 'max10_rolling_30', 'acq_table']
     feddata_threshold = [ [cri_num_p_day_m, cri_num_p_day_f] , [cri_end_day_acc_m, cri_end_day_acc_f], [cri_stab_yes_m, cri_stab_yes_f], [cri_max_rol_avg30_m, cri_max_rol_avg30_f], [len(feddata_datatype)-1, len(feddata_datatype)-1]]
+    feddata_datatype_rt = ['rt_avg','rt_sem','rt_pellet_count','rt_raw']
+    feddata_threshold_rt = [cri_rt_thres_m, cri_rt_thres_f]
 
+    # for each mouse
     mouse_data_list = []
     for mouse in mice_list:
         # generate mouse demo data, threshold 
@@ -251,9 +273,11 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
         else:
             mouse_data['sex'] = mouse.sex
 
-        # loop each day
+        # loop each day, init raw and binary table
         thres_raw = [0] * (len(feddata_datatype)* (pick_num_day_total))
         thres_binary = [0] * (len(feddata_datatype)* (pick_num_day_total))
+        # for rt raw data, init raw table
+        thres_raw_rt = [0] * (len(feddata_datatype_rt)* (pick_num_day_total))
         if mouse_thres_index != -1: # either male or female
 
             has_shown_first_3R_PR_QU_X = 0
@@ -263,10 +287,11 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
 
             # for each day
             for feddata_num_day_index in range(pick_num_day_start, pick_num_day_end+1):
+
                 feddata_num_day_offset = feddata_num_day_index-pick_num_day_start
     
                 acq_table_count = 0
-                # get day filter
+                # get byday feddata via filter
                 feddata_mouse_day = feddata_cohort.filter(mouse=mouse, fedNumDay=feddata_num_day_index)
                 if feddata_mouse_day:
                     # day filter for num_p_day
@@ -283,12 +308,13 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                     thres_raw[STAB_YES*pick_num_day_total+feddata_num_day_offset] = cur_day_count
 
                     # default: compare previous day (FR1, FR3, 3R, 3R_PR/X, 3R_QU/X)
+                    # feddata_num_day_offset=0 means the first day in range
                     if feddata_num_day_offset >= 0: 
                         pre_day_count = 0
                         # default
-                        if feddata_num_day_offset == 0:
-                            if feddata_num_day_index > 0:
-                                pre_day_from_cohort = FedDataByDay.objects.filter(mouse=mouse, fedNumDay=feddata_num_day_index-1)
+                        if feddata_num_day_offset == 0: # not in thres_raw but maybe in byday table
+                            pre_day_from_cohort = FedDataByDay.objects.filter(mouse=mouse, fedNumDay=feddata_num_day_index-1)
+                            if pre_day_from_cohort:
                                 pre_day_count = pre_day_from_cohort[0].pelletCount 
                         else:
                             pre_day_count = thres_raw[NUM_P_DAY*pick_num_day_total+(feddata_num_day_offset-1)]
@@ -367,12 +393,38 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                                 thres_binary[STAB_YES*pick_num_day_total+feddata_num_day_offset] = 1
                                 acq_table_count += 1
 
-                    # end day acc
+                    # handle end day acc
                     cur_day_poke_acc = feddata_mouse_day[0].pokeAcc
                     thres_raw[END_DAY_ACC*pick_num_day_total+feddata_num_day_offset] = float(cur_day_poke_acc)
                     if cur_day_poke_acc > feddata_threshold[END_DAY_ACC][mouse_thres_index]:
                         thres_binary[END_DAY_ACC*pick_num_day_total+feddata_num_day_offset] = 1
                         acq_table_count += 1
+
+                    # handle retrieval time RT 
+                    cur_day_rt_avg = feddata_mouse_day[0].rtAvg
+                    cur_day_rt_sem = feddata_mouse_day[0].rtSem
+                    cur_day_rt_pc = feddata_mouse_day[0].rtPelletCount
+                    cur_day_rt_raw = feddata_mouse_day[0].rtRaw
+                    # if thres != 0, recalculate the stat values
+                    if feddata_threshold_rt[mouse_thres_index] != 0:
+                        # re-calculate avg
+                        rt_list = cur_day_rt_raw.split(",")
+                        rt_np_arr = np.array(rt_list)
+                        rt_np_arr = rt_np_arr.astype(int)
+                        # filter out 
+                        rt_np_arr_filtered = rt_np_arr[ (rt_np_arr < feddata_threshold_rt[mouse_thres_index]) ] 
+
+                        cur_day_rt_sem = round(np.std(rt_np_arr_filtered, ddof=1) / np.sqrt(np.size(rt_np_arr_filtered)), 4)
+                        cur_day_rt_avg = round(np.mean(rt_np_arr_filtered), 4)
+                        cur_day_rt_raw = ",".join(str(v) for v in rt_np_arr_filtered.tolist())
+                        cur_day_rt_pc = rt_np_arr_filtered.size 
+
+                    # fill into thres_raw_rt
+                    thres_raw_rt[0*pick_num_day_total+feddata_num_day_offset] = cur_day_rt_avg
+                    thres_raw_rt[1*pick_num_day_total+feddata_num_day_offset] = cur_day_rt_sem
+                    thres_raw_rt[2*pick_num_day_total+feddata_num_day_offset] = cur_day_rt_pc
+                    thres_raw_rt[3*pick_num_day_total+feddata_num_day_offset] = cur_day_rt_raw
+
 
                 # get rolling filter
                 feddata_rolling_mouse_day = feddata_cohort_rolling.filter(mouse=mouse, fedNumDay=feddata_num_day_index) 
@@ -398,13 +450,16 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
         # thres_raw, binary ready
         mouse_data['thres_raw'] = thres_raw
         mouse_data['thres_binary'] = thres_binary
+        mouse_data['thres_raw_rt'] = thres_raw_rt
 
         # append mouse data
         mouse_data_list.append(mouse_data)
 
     # formating output
-    final_acq_output = []
-    for type_index in [ACQ_TABLE, NUM_P_DAY, STAB_YES, END_DAY_ACC, MAX10_ROLLING_30]:
+    final_acq_output_tabs = {}
+    for tab_index in range(4):
+        final_acq_output_tabs[tab_index] = []
+    for type_index in [ACQ_TABLE, NUM_P_DAY, STAB_YES, END_DAY_ACC, MAX10_ROLLING_30, RT_AVG, RT_SEM, RT_PC, RT_RAW]:
         for mouse in mouse_data_list:
             mouse_row = {}
             mouse_row['mouse_id'] = mouse['mouse_id']
@@ -412,15 +467,28 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
             mouse_row['fed'] = mouse['fed']
             mouse_row['genotype'] = mouse['genotype']
             mouse_row['sex'] = mouse['sex']
-            mouse_row['data_type'] = feddata_datatype[type_index]
-            # binary
-            for day_index in range(pick_num_day_total):
-                mouse_row[feddata_day_arr_name[day_index]] = mouse['thres_binary'][type_index*pick_num_day_total + day_index]
-            # raw
-            mouse_row['threshold'] = "M:%.2f F:%.2f" % (feddata_threshold[type_index][MALE], feddata_threshold[type_index][FEMALE])
-            for day_index in range(pick_num_day_total):
-                mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw'][type_index*pick_num_day_total + day_index]
-            final_acq_output.append(mouse_row)
+
+            if type_index < RT_AVG:
+                mouse_row['data_type'] = feddata_datatype[type_index]
+                # binary
+                for day_index in range(pick_num_day_total):
+                    mouse_row[feddata_day_arr_name[day_index]] = mouse['thres_binary'][type_index*pick_num_day_total + day_index]
+                # raw
+                mouse_row['threshold'] = "M:%.2f F:%.2f" % (feddata_threshold[type_index][MALE], feddata_threshold[type_index][FEMALE])
+                for day_index in range(pick_num_day_total):
+                    mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw'][type_index*pick_num_day_total + day_index]
+                if type_index == ACQ_TABLE:
+                    final_acq_output_tabs[0].append(mouse_row)
+                else
+                    final_acq_output_tabs[1].append(mouse_row)
+            else: # for rt
+                type_index_rt = type_index-len(feddata_datatype)
+                mouse_row['data_type'] = feddata_datatype_rt[ type_index_rt ]
+                mouse_row['threshold'] = "M:%.2f F:%.2f" % (feddata_threshold_rt[MALE], feddata_threshold_rt[FEMALE])
+                for day_index in range(pick_num_day_total):
+                    mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw_rt'][ type_index_rt*pick_num_day_total + day_index]
+                final_acq_output_tabs[2].append(mouse_row)
+    
     # generate test_type
     for mouse in mouse_data_list:
         mouse_row = {}
@@ -429,6 +497,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
         mouse_row['fed'] = mouse['fed']
         mouse_row['genotype'] = mouse['genotype']
         mouse_row['sex'] = mouse['sex']
+
         mouse_row['data_type'] = "test_type"
         for day_offset in range(pick_num_day_total):
             test_type = FedDataTestType.objects.filter(mouse_id=mouse['mouse_id'], fedNumDay=pick_num_day_start+day_offset)
@@ -436,9 +505,10 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                 mouse_row[feddata_day_arr_name[day_offset]] = test_type[0].testType
             else:
                 mouse_row[feddata_day_arr_name[day_offset]] = ""
-        final_acq_output.append(mouse_row)
+        final_acq_output_tabs[0].append(mouse_row)
+        final_acq_output_tabs[1].append(mouse_row)
 
-    return final_acq_output
+    return final_acq_output_tabs
 
 def get_feddate_array_name(feddata_day, pick_num_day_start, pick_num_day_end):
     # get feddate array name
@@ -521,3 +591,36 @@ def del_mouse_data_fun(mouse_data):
 
     return
 
+# Given one mouse, one day, select all RT records and put into feddatabyrt
+def cal_rt_of_day(m, d, fedNumDay, onset_timestamp):
+    # check test type, decide the experiment time
+    cut_off_hr=8
+    qs_testtype = FedDataTestType.objects.filter(mouse=m, fedNumDay=fedNumDay)
+    if qs_testtype:
+        if qs_testtype[0].testType in ['QU', 'QU_X', 'E']:
+            cut_off_hr=4
+
+    qs_hr_rt = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d).filter(actTimestamp__lte=(onset_timestamp+timedelta(hours=cut_off_hr))).exclude(retrievalTime=-1)
+    rt_list = []
+    rt_pel = 0
+    rt_pc_pre = 0
+    for i_q in range(len(qs_hr_rt)):
+        # insert into rt table
+        feddayrt = FedDataByRT(actTimestamp=qs_hr_rt[i_q].actTimestamp, retrievalTime=qs_hr_rt[i_q].retrievalTime, pelletCount=qs_hr_rt[i_q].pelletCount, fedDate=d, fedNumDay=fedNumDay, mouse=m)
+        feddayrt.save()
+
+        # deal with nan value pellet retrieval
+        if qs_hr_rt[i_q].pelletCount - rt_pc_pre != 1: # miss nan, fill with 0
+            rt_list.append(0)
+
+        rt_list.append( qs_hr_rt[i_q].retrievalTime )
+        rt_pel = qs_hr_rt[i_q].pelletCount
+
+        rt_pc_pre = qs_hr_rt[i_q].pelletCount
+    # mean and sem 
+    rt_np_arr = np.array(rt_list)
+    rt_sem = round(np.std(rt_np_arr, ddof=1) / np.sqrt(np.size(rt_np_arr)), 4)
+    rt_avg = round(np.mean(rt_np_arr), 4)
+    rt_raw = ",".join(str(v) for v in rt_list)
+
+    return rt_avg, rt_sem, rt_pel, rt_raw

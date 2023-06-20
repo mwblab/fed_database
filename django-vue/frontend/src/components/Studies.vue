@@ -52,7 +52,15 @@
         </b-container>
         <br>
         <!--<p>Step 2. after uploading, calculate cohort data by hour, poke</p>!-->
-        <b-button pill variant="primary" :disabled=cal_running @click="calData()">Calculate</b-button>
+        <div v-if="req_cal_loading">
+             <b-button variant="primary" disabled>
+                 <b-spinner small></b-spinner>
+                 <span class="sr-only">Loading...</span>
+             </b-button>
+        </div>
+        <div v-else>
+            <b-button pill variant="primary" :disabled=cal_running @click="calData()">Calculate</b-button>
+        </div>
         <br>
         <!--<p>Step 3. download acquisition csv of one cohort</p>!-->
         <br>
@@ -117,15 +125,41 @@
             </b-col>
           </b-row>
 
+          <b-row align-h="center">
+            <b-col sm="4">Pellet Retrieval Time threshold</b-col>
+            <b-col sm="2">
+            <b-form-input type="text" class="form-control" size="sm" id="cri_rt_thres_m_id" v-model="cri_rt_thres_m"></b-form-input>
+            </b-col>
+            <b-col sm="2">
+            <b-form-input type="text" class="form-control" size="sm" id="cri_rt_thres_f_id" v-model="cri_rt_thres_f"></b-form-input>
+            </b-col>
+          </b-row>
+
+          <b-row align-h="center">
+            <b-col sm="4">Exported excel filename</b-col>
+            <b-col sm="2">
+            <b-form-input type="text" class="form-control" size="sm" id="acq_table_export_filename_id" v-model="acq_table_export_filename"></b-form-input>
+            </b-col>
+            <b-col sm="2">
+            </b-col>
+          </b-row>
+
         </b-container>
 
-        <b-button pill variant="outline-secondary" @click="getAcqTable()">Show Acquisition Table</b-button>
-        <download-csv
-        class   = "btn btn-default"
-        :data   = "acq_table"
-        name    = "acq_table.csv">
-        <b-button pill variant="primary" class="button" :disabled=!acq_table_ready>Download CSV</b-button>
-        </download-csv>
+        <br>
+        <div v-if="req_acq_loading">
+             <b-button pill variant="outline-secondary" disabled>
+                 <b-spinner small></b-spinner>
+                 <span class="sr-only">Loading...</span>
+             </b-button>
+        </div>
+        <div v-else>
+             <b-button pill variant="outline-secondary" @click="getAcqTable()">Show Acquisition Table</b-button>
+             <!-- refactor from csv to xlsx -->
+             <!-- https://docs.sheetjs.com/docs/demos/frontend/vue -->
+             <!-- https://github.com/SheetJS/sheetjs/issues/664 -->
+             <b-button pill variant="primary" class="button" :disabled=!acq_table_ready @click="exportFile">Export XLSX</b-button>
+        </div>
 
         <br>
         <div v-if="acq_table_ready">
@@ -138,6 +172,8 @@
 </template>
 
 <script>
+import { utils, writeFileXLSX } from 'xlsx'
+
 export default {
   data () {
     return {
@@ -159,14 +195,20 @@ export default {
       cri_max_rol_avg30_f: 0.8,
       cri_stab_yes_m: 0.2,
       cri_stab_yes_f: 0.2,
-      acq_table: [{'name': 'test'}],
+      cri_rt_thres_m: 0,
+      cri_rt_thres_f: 0,
+      acq_table_tabs: [{'name': 'test'}],
       acq_table_disp: [],
       acq_table_test_type: [],
       acq_table_ready: false,
+      acq_table_export_filename: 'acq_table',
       // for dropdown cohort list
       options: [],
       dropdown_cohort_text: 'Select Cohort',
-      modalShow: false
+      modalShow: false,
+      req_cal_loading: false,
+      req_acq_loading: false
+
     }
   },
   methods: {
@@ -234,12 +276,14 @@ export default {
     async calData () {
       const sData = {}
       sData.cId = this.cohort_id
+      this.req_cal_loading = true
       const requestOptions = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sData)
       }
       const response = await fetch('http://128.173.224.170:3000/api/auto/proccal/', requestOptions)
+      this.req_cal_loading = false
       if (response.status === 201) {
         await this.makeToast('Calculate: Successful!')
       } else {
@@ -248,7 +292,6 @@ export default {
     },
     async getAcqTable () {
       // update acq_table variable
-      // update csv filename
       const sData = {}
       sData.cId = this.cohort_id
       sData.time_acq_picker = this.time_acq_picker
@@ -261,18 +304,23 @@ export default {
       sData.cri_max_rol_avg30_f = this.cri_max_rol_avg30_f
       sData.cri_stab_yes_m = this.cri_stab_yes_m
       sData.cri_stab_yes_f = this.cri_stab_yes_f
+      sData.cri_rt_thres_m = this.cri_rt_thres_m
+      sData.cri_rt_thres_f = this.cri_rt_thres_f
+      this.req_acq_loading = true
       const requestOptions = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sData)
       }
       const response = await fetch('http://128.173.224.170:3000/api/auto/procacq/', requestOptions)
-      this.acq_table = await response.json()
+      this.acq_table_tabs = await response.json()
       // console.log(this.acq_table)
+      this.req_acq_loading = false
       if (response.status === 201) {
         // prepare acq disp
         this.acq_table_disp = []
         this.acq_table_test_type = []
+        this.acq_table = this.acq_table_tabs[0]
         for (let i = 0; i < this.acq_table.length; i++) {
           if (this.acq_table[i]['fed'] === 'pseufed') {
             continue
@@ -321,6 +369,17 @@ export default {
       } else {
         await this.makeToast('Show: Failed!')
       }
+    },
+    /* get state data and export to XLSX */
+    async exportFile () {
+      const wb = utils.book_new()
+      const ws1 = utils.json_to_sheet(this.acq_table_tabs[0])
+      utils.book_append_sheet(wb, ws1, 'Data1')
+      const ws2 = utils.json_to_sheet(this.acq_table_tabs[1])
+      utils.book_append_sheet(wb, ws2, 'Data2')
+      const ws3 = utils.json_to_sheet(this.acq_table_tabs[2])
+      utils.book_append_sheet(wb, ws3, 'Data3')
+      writeFileXLSX(wb, this.acq_table_export_filename + '.xlsx')
     },
     // for uploader
     async uploadFiles () {

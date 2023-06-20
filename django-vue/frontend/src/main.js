@@ -6,7 +6,6 @@ import router from './router'
 
 import VueFileAgent from 'vue-file-agent'
 import VueFileAgentStyles from 'vue-file-agent/dist/vue-file-agent.css'
-import JsonCSV from 'vue-json-csv'
 // import Vuetify from 'vuetify'
 // import 'vuetify/dist/vuetify.min.css' // Ensure you are using css-loader
 import DatePicker from 'vue2-datepicker'
@@ -22,8 +21,6 @@ Vue.use(BootstrapVueIcons)
 
 Vue.use(VueFileAgent)
 Vue.use(VueFileAgentStyles)
-
-Vue.component('downloadCsv', JsonCSV)
 
 Vue.use(DatePicker)
 
