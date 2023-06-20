@@ -158,7 +158,7 @@
              <!-- refactor from csv to xlsx -->
              <!-- https://docs.sheetjs.com/docs/demos/frontend/vue -->
              <!-- https://github.com/SheetJS/sheetjs/issues/664 -->
-             <b-button pill variant="primary" class="button" :disabled=!acq_table_ready @click="exportFile">Export XLSX</b-button>
+             <b-button pill variant="primary" class="button" @click="exportFile">Export XLSX</b-button>
         </div>
 
         <br>
@@ -372,6 +372,8 @@ export default {
     },
     /* get state data and export to XLSX */
     async exportFile () {
+      await this.getAcqTable()
+
       const wb = utils.book_new()
       const ws1 = utils.json_to_sheet(this.acq_table_tabs[0])
       utils.book_append_sheet(wb, ws1, 'Data1')
