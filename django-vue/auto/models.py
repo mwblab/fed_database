@@ -72,6 +72,7 @@ class FedDataByDay(models.Model):
     mouse = models.ForeignKey(Mouse, on_delete=models.CASCADE)
 
 class FedDataRolling(models.Model):
+    curPoke = models.IntegerField(default=0) # 1 for left, 2 for right
     pokeAcc = models.DecimalField(default=0.0, max_digits=7, decimal_places=6)
     windowSize = models.IntegerField(default=0)
     startTime = models.DateTimeField()
