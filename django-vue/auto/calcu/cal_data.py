@@ -6,6 +6,7 @@ from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
 import numpy as np
+import copy
 
 NUM_P_DAY=0
 END_DAY_ACC=1
@@ -205,7 +206,7 @@ def cal_rolling(m, d, win_size):
 
 
 
-def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num_p_day_f, cri_end_day_acc_m, cri_end_day_acc_f, cri_max_rol_avg30_m, cri_max_rol_avg30_f, cri_stab_yes_m, cri_stab_yes_f, cri_rt_thres_m, cri_rt_thres_f):
+def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num_p_day_f, cri_end_day_acc_m, cri_end_day_acc_f, cri_max_rol_avg30_m, cri_max_rol_avg30_f, cri_stab_yes_m, cri_stab_yes_f, cri_rt_thres_m, cri_rt_thres_f, cri_filter_test_type):
     window_size = 30
 
     # get start, end num_day
@@ -457,8 +458,27 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
 
     # formating output
     final_acq_output_tabs = {}
+    final_acq_output_tabs_filtered = {}
     for tab_index in range(4):
         final_acq_output_tabs[tab_index] = []
+        final_acq_output_tabs_filtered[tab_index] = []
+    # get test type list and max filter count of each mouse
+    test_type_list = {}
+    filter_count_list = []
+    for mouse in mouse_data_list:
+        test_type_list[mouse['mouse_id']] = {}
+        mouse_row_filter_count = 0
+        for day_offset in range(pick_num_day_total):
+            test_type = FedDataTestType.objects.filter(mouse_id=mouse['mouse_id'], fedNumDay=pick_num_day_start+day_offset)
+            if test_type:
+                test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_offset]] = test_type[0].testType
+                if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_offset]] == cri_filter_test_type:
+                    mouse_row_filter_count += 1
+            else:
+                test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_offset]] = ""
+        filter_count_list.append(mouse_row_filter_count)
+
+    # generate the ACQ_TABLE - RT_RAW tables
     for type_index in [ACQ_TABLE, NUM_P_DAY, STAB_YES, END_DAY_ACC, MAX10_ROLLING_30, RT_AVG, RT_SEM, RT_PC, RT_RAW]:
         for mouse in mouse_data_list:
             mouse_row = {}
@@ -467,29 +487,78 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
             mouse_row['fed'] = mouse['fed']
             mouse_row['genotype'] = mouse['genotype']
             mouse_row['sex'] = mouse['sex']
+            # for test type filter
+            mouse_row_filter = copy.deepcopy(mouse_row)
 
             if type_index < RT_AVG:
                 mouse_row['data_type'] = feddata_datatype[type_index]
+                mouse_row_filter['data_type'] = feddata_datatype[type_index]
                 # binary
+                mouse_row_filter_count = 0
                 for day_index in range(pick_num_day_total):
                     mouse_row[feddata_day_arr_name[day_index]] = mouse['thres_binary'][type_index*pick_num_day_total + day_index]
+                    # if meet filter condition
+                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type:
+                        mouse_row_filter['d_align'+str(mouse_row_filter_count+1)] = mouse['thres_binary'][type_index*pick_num_day_total + day_index]
+                        mouse_row_filter_count += 1
+                # fill missing col
+                max_filter_count = max(filter_count_list)
+                if mouse_row_filter_count > 0 and mouse_row_filter_count != max_filter_count:
+                    # E.g. max_filter_count=5 mouse_row_filter_count=1
+                    for miss_idx in range(mouse_row_filter_count, (max_filter_count-mouse_row_filter_count)+1 ):
+                        mouse_row_filter['d_align'+str(miss_idx+1)] = ''
+                # reset filter count for raw
+                mouse_row_filter_count = 0
                 # raw
                 mouse_row['threshold'] = "M:%.2f F:%.2f" % (feddata_threshold[type_index][MALE], feddata_threshold[type_index][FEMALE])
+                mouse_row_filter['threshold'] = "M:%.2f F:%.2f" % (feddata_threshold[type_index][MALE], feddata_threshold[type_index][FEMALE])
                 for day_index in range(pick_num_day_total):
                     mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw'][type_index*pick_num_day_total + day_index]
+                    # if meet filter condition
+                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type:
+                        mouse_row_filter['d_align'+str(mouse_row_filter_count+1)+" "] = mouse['thres_raw'][type_index*pick_num_day_total + day_index]
+                        mouse_row_filter_count += 1
+                # fill missing col
+                max_filter_count = max(filter_count_list)
+                if mouse_row_filter_count > 0 and mouse_row_filter_count != max_filter_count:
+                    # E.g. max_filter_count=5 mouse_row_filter_count=1
+                    for miss_idx in range(mouse_row_filter_count, (max_filter_count-mouse_row_filter_count)+1 ):
+                        mouse_row_filter['d_align'+str(miss_idx+1)+' '] = ''
+
+                # insert tabs array
                 if type_index == ACQ_TABLE:
                     final_acq_output_tabs[0].append(mouse_row)
+                    if mouse_row_filter_count != 0:
+                        final_acq_output_tabs_filtered[0].append(mouse_row_filter)
                 else:
                     final_acq_output_tabs[1].append(mouse_row)
+                    if mouse_row_filter_count != 0:
+                        final_acq_output_tabs_filtered[1].append(mouse_row_filter)
             else: # for rt
                 type_index_rt = type_index-len(feddata_datatype)
                 mouse_row['data_type'] = feddata_datatype_rt[ type_index_rt ]
+                mouse_row_filter['data_type'] = feddata_datatype_rt[ type_index_rt ]
                 mouse_row['threshold'] = "M:%.2f F:%.2f" % (feddata_threshold_rt[MALE], feddata_threshold_rt[FEMALE])
+                mouse_row_filter['threshold'] = "M:%.2f F:%.2f" % (feddata_threshold_rt[MALE], feddata_threshold_rt[FEMALE])
+
+                mouse_row_filter_count = 0
                 for day_index in range(pick_num_day_total):
                     mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw_rt'][ type_index_rt*pick_num_day_total + day_index]
+                    # filter test type
+                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type:
+                        mouse_row_filter['d_align'+str(mouse_row_filter_count+1)+""] = mouse['thres_raw_rt'][ type_index_rt*pick_num_day_total + day_index]
+                        mouse_row_filter_count += 1
+                # fill missing col
+                max_filter_count = max(filter_count_list)
+                if mouse_row_filter_count > 0 and mouse_row_filter_count != max_filter_count:
+                    for miss_idx in range(mouse_row_filter_count, (max_filter_count-mouse_row_filter_count)+1 ):
+                        mouse_row_filter['d_align'+str(miss_idx+1)+''] = ''
+
                 final_acq_output_tabs[2].append(mouse_row)
+                if mouse_row_filter_count != 0:
+                    final_acq_output_tabs_filtered[2].append(mouse_row_filter)
     
-    # generate test_type
+    # generate test_type and date
     for mouse in mouse_data_list:
         mouse_row = {}
         mouse_row['mouse_id'] = mouse['mouse_id']
@@ -497,18 +566,37 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
         mouse_row['fed'] = mouse['fed']
         mouse_row['genotype'] = mouse['genotype']
         mouse_row['sex'] = mouse['sex']
+        # for date
+        mouse_row_filter = copy.deepcopy(mouse_row)
 
         mouse_row['data_type'] = "test_type"
+        mouse_row_filter['data_type'] = "date"
+        mouse_row_filter['threshold'] = "M:%.2f F:%.2f" % (feddata_threshold_rt[MALE], feddata_threshold_rt[FEMALE])
+        mouse_row_filter_count = 0
         for day_offset in range(pick_num_day_total):
             test_type = FedDataTestType.objects.filter(mouse_id=mouse['mouse_id'], fedNumDay=pick_num_day_start+day_offset)
             if test_type:
                 mouse_row[feddata_day_arr_name[day_offset]] = test_type[0].testType
             else:
                 mouse_row[feddata_day_arr_name[day_offset]] = ""
+            # date info for filter
+            if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_offset]] == cri_filter_test_type:
+                mouse_row_filter['d_align'+str(mouse_row_filter_count+1)] = feddata_day_arr_name[day_offset]
+                mouse_row_filter_count += 1
+        # fill missing col
+        max_filter_count = max(filter_count_list)
+        if mouse_row_filter_count > 0 and mouse_row_filter_count != max_filter_count:
+            for miss_idx in range(mouse_row_filter_count, (max_filter_count-mouse_row_filter_count)+1 ):
+                mouse_row_filter['d_align'+str(miss_idx+1)+''] = ''
+
         final_acq_output_tabs[0].append(mouse_row)
         final_acq_output_tabs[1].append(mouse_row)
+        if mouse_row_filter_count != 0:
+            final_acq_output_tabs_filtered[0].append(mouse_row_filter)
+            final_acq_output_tabs_filtered[1].append(mouse_row_filter)
+            final_acq_output_tabs_filtered[2].append(mouse_row_filter)
 
-    return final_acq_output_tabs
+    return [final_acq_output_tabs, final_acq_output_tabs_filtered]
 
 def get_feddate_array_name(feddata_day, pick_num_day_start, pick_num_day_end):
     # get feddate array name

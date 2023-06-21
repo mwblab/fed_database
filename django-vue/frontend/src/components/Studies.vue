@@ -68,10 +68,27 @@
         <b-container class="bv-example-cri">
 
           <b-row align-h="center">
-            <b-col sm="4">Latest Day and Previous Day Length</b-col>
+            <b-col sm="4">Latest Day</b-col>
             <b-col sm="2">
               <date-picker v-model="time_acq_picker" valueType="format"></date-picker>
+            </b-col>
+            <b-col sm="2">
+            </b-col>
+          </b-row>
+
+          <b-row align-h="center">
+            <b-col sm="4">Number of Previous Days</b-col>
+            <b-col sm="2">
               <b-form-input type="number" class="form-control" size="sm" id="time_acq_range" v-model="time_acq_range"></b-form-input>
+            </b-col>
+            <b-col sm="2">
+            </b-col>
+          </b-row>
+
+          <b-row align-h="center">
+            <b-col sm="4">Filter out Test Type</b-col>
+            <b-col sm="2">
+              <b-form-select v-model="filter_selected" :options="filter_options"></b-form-select>
             </b-col>
             <b-col sm="2">
             </b-col>
@@ -207,8 +224,20 @@ export default {
       dropdown_cohort_text: 'Select Cohort',
       modalShow: false,
       req_cal_loading: false,
-      req_acq_loading: false
-
+      req_acq_loading: false,
+      filter_selected: 'ALL',
+      filter_options: [
+          { value: 'ALL', text: 'Show All' },
+          { value: 'FR1', text: 'FR1' },
+          { value: 'FR3', text: 'FR3' },
+          { value: '3R', text: '3R' },
+          { value: 'PR', text: 'PR' },
+          { value: '3R_PR', text: '3R_PR' },
+          { value: 'QU', text: 'QU' },
+          { value: '3R_QU', text: '3R_QU' },
+          { value: 'E', text: 'E' },
+          { value: 'RE', text: 'RE' },
+        ]
     }
   },
   methods: {
@@ -306,6 +335,7 @@ export default {
       sData.cri_stab_yes_f = this.cri_stab_yes_f
       sData.cri_rt_thres_m = this.cri_rt_thres_m
       sData.cri_rt_thres_f = this.cri_rt_thres_f
+      sData.cri_filter_test_type = this.filter_selected
       this.req_acq_loading = true
       const requestOptions = {
         method: 'POST',
@@ -320,7 +350,7 @@ export default {
         // prepare acq disp
         this.acq_table_disp = []
         this.acq_table_test_type = []
-        this.acq_table = this.acq_table_tabs[0]
+        this.acq_table = this.acq_table_tabs[0][0]
         for (let i = 0; i < this.acq_table.length; i++) {
           if (this.acq_table[i]['fed'] === 'pseufed') {
             continue
@@ -375,12 +405,21 @@ export default {
       await this.getAcqTable()
 
       const wb = utils.book_new()
-      const ws1 = utils.json_to_sheet(this.acq_table_tabs[0])
-      utils.book_append_sheet(wb, ws1, 'Data1')
-      const ws2 = utils.json_to_sheet(this.acq_table_tabs[1])
-      utils.book_append_sheet(wb, ws2, 'Data2')
-      const ws3 = utils.json_to_sheet(this.acq_table_tabs[2])
-      utils.book_append_sheet(wb, ws3, 'Data3')
+      if (this.filter_selected !== 'ALL') {
+          const ws4 = utils.json_to_sheet(this.acq_table_tabs[1][0])
+          utils.book_append_sheet(wb, ws4, this.filter_selected+'_Data1')
+          const ws5 = utils.json_to_sheet(this.acq_table_tabs[1][1])
+          utils.book_append_sheet(wb, ws5, this.filter_selected+'_Data2')
+          const ws6 = utils.json_to_sheet(this.acq_table_tabs[1][2])
+          utils.book_append_sheet(wb, ws6, this.filter_selected+'_Data3')
+      }
+
+      const ws1 = utils.json_to_sheet(this.acq_table_tabs[0][0])
+      utils.book_append_sheet(wb, ws1, 'All_Data1')
+      const ws2 = utils.json_to_sheet(this.acq_table_tabs[0][1])
+      utils.book_append_sheet(wb, ws2, 'All_Data2')
+      const ws3 = utils.json_to_sheet(this.acq_table_tabs[0][2])
+      utils.book_append_sheet(wb, ws3, 'All_Data3')
       writeFileXLSX(wb, this.acq_table_export_filename + '.xlsx')
     },
     // for uploader
