@@ -1,7 +1,7 @@
-from auto.models import Mouse, FedDataRaw, FedDataByHour, FedDataByDay, Cohort, FedDataRolling, FedDataTestType, FedDataByRT
+from auto.models import Mouse, FedDataRaw, FedDataByHour, FedDataByDay, Cohort, FedDataRolling, FedDataTestType, FedDataByRT, FedDataRollingPoke
 from datetime import datetime, date, timedelta
 from django.utils import timezone
-from django.db.models import Avg, F, RowRange, Window, Max
+from django.db.models import Avg, F, RowRange, Window, Max, Sum
 from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
@@ -56,14 +56,21 @@ def proc_run(cohort_id):
                 print(d)
                 print("cal_hr_day")
             cal_hr_day(m, d)
+
             if DEBUG:
-                print("cal_rolling_1")
-            cal_rolling_avg(m, d)
+                print("cal_rolling_avg_nonwindow")
+            cal_rolling_avg_nonwindow(m, d)
+            if DEBUG:
+                print("cal_rolling_avg_nonwindow_cur_poke")
+            cal_rolling_avg_nonwindow_cur_poke(m, d)
+
             if DEBUG:
                 print("cal_rolling_window")
-            cal_rolling(m, d, 30)
+            cal_rolling_window(m, d, 30)
             if DEBUG:
-                print("end of cal_rolling_window")
+                print("cal_rolling_window_cur_poke")
+            cal_rolling_window_cur_poke(m, d, 30)
+
 
 def get_mouse_list(cohort_id):
     qs = Mouse.objects.filter(fed__cohort_id=cohort_id)
@@ -143,8 +150,8 @@ def cal_hr_day(m, d):
 
 
 
-
-def cal_rolling_avg(m, d):
+# cal rolling avg of poke_acc
+def cal_rolling_avg_nonwindow(m, d):
     qs = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d)
 
     # get active poke
@@ -157,13 +164,14 @@ def cal_rolling_avg(m, d):
     if onset_index >= total_qs:
         return
     for i in range(len(qs)):
-        if qs[onset_index+i].event == 2:
+        if qs[onset_index+i].event == 2: # ignore pellet count record for onset
             continue
         else:
             onset_index = onset_index+i
             break
     onset_time = qs[onset_index].actTimestamp
 
+    # ignore all pellet counts
     qs_poke = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d, event=1, actTimestamp__gte=onset_time)
     #print(len(qs_poke))
 
@@ -173,6 +181,7 @@ def cal_rolling_avg(m, d):
         rc = qs_poke[i].rightPokeCount
         ts = qs_poke[i].actTimestamp
 
+        # cal poke acc
         poke_acc=0;
         if lc+rc == 0:
             poke_acc=0;
@@ -187,7 +196,33 @@ def cal_rolling_avg(m, d):
         fdr.save()
 
 
-def cal_rolling(m, d, win_size):
+# cal rolling avg of cur poke
+def cal_rolling_avg_nonwindow_cur_poke(m, d):
+    qs = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d)
+    fedNumDay = qs[0].actNumDay
+
+    # ignore all pellet counts
+    onset_time = qs[0].actTimestamp
+    qs_poke = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d, event=1, actTimestamp__gte=onset_time) 
+    if qs_poke and len(qs_poke) > 3: # at least 2 records
+        rc_pre = -1
+        for i in range(len(qs_poke)):
+            if i==0:
+                rc_pre = qs_poke[i].rightPokeCount
+                continue
+            cur_poke = 1 # default = left poke
+            if qs_poke[i].rightPokeCount != rc_pre: #right count increase
+                cur_poke = 0 # set 0 for right poke
+            # update rc_pre
+            rc_pre = qs_poke[i].rightPokeCount
+            ts = qs_poke[i].actTimestamp
+
+            fdr = FedDataRollingPoke(curPoke=cur_poke, windowSize=1, startTime=ts, endTime=ts, fedDate=d, fedNumDay=fedNumDay, mouse=m)
+            fdr.save()
+
+
+# cal rolling avg of poke_acc
+def cal_rolling_window(m, d, win_size):
     #start rolling
     #https://stackoverflow.com/questions/48790322/fast-moving-average-computation-with-django-orm
     items = FedDataRolling.objects.filter(windowSize=1, mouse=m, fedDate=d).annotate(
@@ -205,6 +240,22 @@ def cal_rolling(m, d, win_size):
         fdr.save()
 
 
+# cal rolling sum of cur poke: left
+def cal_rolling_window_cur_poke(m, d, win_size):
+    #start rolling
+    #https://stackoverflow.com/questions/48790322/fast-moving-average-computation-with-django-orm
+    items = FedDataRollingPoke.objects.filter(windowSize=1, mouse=m, fedDate=d).annotate(
+            total_left_pokes=Window(
+                expression=Sum('curPoke'), 
+                order_by=F('id').asc(), 
+                frame=RowRange(start=(0-win_size+1),end=0)
+                )
+            )
+
+    for i in range(win_size-1, len(items)):
+        total_left_pokes = items[i].total_left_pokes
+        fdrp = FedDataRollingPoke(curPoke=total_left_pokes, windowSize=win_size, startTime=items[i-(win_size-1)].startTime, endTime=items[i].startTime, fedDate=d, fedNumDay=items[i].fedNumDay, mouse=m)
+        fdrp.save()
 
 def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num_p_day_f, cri_end_day_acc_m, cri_end_day_acc_f, cri_max_rol_avg30_m, cri_max_rol_avg30_f, cri_stab_yes_m, cri_stab_yes_f, cri_rt_thres_m, cri_rt_thres_f, cri_filter_test_type):
     window_size = 30
