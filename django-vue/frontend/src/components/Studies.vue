@@ -33,21 +33,17 @@
         ></VueFileAgent>
         <b-container class="bv-example-day">
 
+        <div v-if="req_upload_loading">
+             <b-button variant="primary" disabled>
+                 <b-spinner small></b-spinner>
+                 <span class="sr-only">Loading...</span>
+             </b-button>
+        </div>
+        <div v-else>
           <b-button pill variant="primary" :disabled="!fileRecordsForUpload.length" @click="uploadFiles()">
           Upload {{ fileRecordsForUpload.length }} files
           </b-button>
-
-          <b-modal v-model="modalShow" ref="modal-day" hide-footer title="Enter Day info">
-            <div class="d-block text-center">
-              <h3>Day</h3>
-              <b-row align-h="center">
-                <b-col sm="2">
-                <b-form-input type="number" class="form-control" size="sm" id="num_day_id" v-model="num_day"></b-form-input>
-                </b-col>
-              </b-row>
-            </div>
-            <b-button class="mt-2" variant="outline-danger" block @click="uploadFiles()">Upload</b-button>
-          </b-modal>
+        </div>
 
         </b-container>
         <br>
@@ -222,7 +218,7 @@ export default {
       // for dropdown cohort list
       options: [],
       dropdown_cohort_text: 'Select Cohort',
-      modalShow: false,
+      req_upload_loading: false,
       req_cal_loading: false,
       req_acq_loading: false,
       filter_selected: 'ALL',
@@ -424,7 +420,8 @@ export default {
     },
     // for uploader
     async uploadFiles () {
-      this.modalShow = false
+      this.req_upload_loading = true
+
       // Using the default uploader. You may use another uploader instead.
       let result = await this.$refs.vueFileAgent.upload(this.uploadUrl, this.uploadHeaders, this.fileRecordsForUpload)
       // Reset queue
@@ -445,6 +442,7 @@ export default {
       }
       console.log(requestOptions)
       const response = await fetch('http://128.173.224.170:3000/api/auto/procdl/', requestOptions)
+      this.req_upload_loading = false
       if (response.status === 201) {
         await this.makeToast('Upload: Successful!')
       } else {
