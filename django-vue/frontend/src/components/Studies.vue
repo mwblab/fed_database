@@ -119,7 +119,7 @@
           </b-row>
 
           <b-row align-h="center">
-            <b-col sm="4">% Correct in Rolling Average of 30</b-col>
+            <b-col sm="4">% Correct in Rolling Average of 30 (CumAcc)</b-col>
             <b-col sm="2">
             <b-form-input type="text" class="form-control" size="sm" id="cri_max_rol_avg30_m_id" v-model="cri_max_rol_avg30_m"></b-form-input>
             </b-col>
@@ -138,6 +138,8 @@
             </b-col>
           </b-row>
 
+          <br>
+
           <b-row align-h="center">
             <b-col sm="4">Pellet Retrieval Time threshold</b-col>
             <b-col sm="2">
@@ -147,6 +149,35 @@
             <b-form-input type="text" class="form-control" size="sm" id="cri_rt_thres_f_id" v-model="cri_rt_thres_f"></b-form-input>
             </b-col>
           </b-row>
+
+          <br>
+
+          <b-row align-h="center">
+            <b-col sm="4">X% Correct in a Rolling Window of Y (Poke)</b-col>
+            <b-col sm="2">
+            </b-col>
+            <b-col sm="2">
+            </b-col>
+          </b-row>
+          <b-row align-h="center">
+            <b-col sm="4">X% correct</b-col>
+            <b-col sm="2">
+            <b-form-input type="text" class="form-control" size="sm" id="cri_rol_poke_m_id" v-model="cri_rol_poke_m"></b-form-input>
+            </b-col>
+            <b-col sm="2">
+            <b-form-input type="text" class="form-control" size="sm" id="cri_rol_poke_f_id" v-model="cri_rol_poke_f"></b-form-input>
+            </b-col>
+          </b-row>
+          <b-row align-h="center">
+            <b-col sm="4">Window Y</b-col>
+            <b-col sm="2">
+            <b-form-input type="text" class="form-control" size="sm" id="cri_rol_poke_w_size_id" v-model="cri_rol_poke_w_size"></b-form-input>
+            </b-col>
+            <b-col sm="2">
+            </b-col>
+          </b-row>
+
+          <br>
 
           <b-row align-h="center">
             <b-col sm="4">Exported excel filename</b-col>
@@ -210,6 +241,9 @@ export default {
       cri_stab_yes_f: 0.2,
       cri_rt_thres_m: 0,
       cri_rt_thres_f: 0,
+      cri_rol_poke_m: 0.85,
+      cri_rol_poke_f: 0.85,
+      cri_rol_poke_w_size: 30,
       acq_table_tabs: [{'name': 'test'}],
       acq_table_disp: [],
       acq_table_test_type: [],
@@ -332,6 +366,9 @@ export default {
       sData.cri_rt_thres_m = this.cri_rt_thres_m
       sData.cri_rt_thres_f = this.cri_rt_thres_f
       sData.cri_filter_test_type = this.filter_selected
+      sData.cri_rol_poke_m = this.cri_rol_poke_m
+      sData.cri_rol_poke_f = this.cri_rol_poke_f
+      sData.cri_rol_poke_w_size = this.cri_rol_poke_w_size
       this.req_acq_loading = true
       const requestOptions = {
         method: 'POST',
