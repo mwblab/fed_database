@@ -74,7 +74,6 @@ def proc_data_load(request):
                 'error': 'Upload failure',
                 'message': 'unable to upload %s due to %s' % (cur_file,e)
             }
-#            return HttpResponse(status=400) 
             return JsonResponse(e_data, status=400)
 # cal
 @csrf_exempt
@@ -88,7 +87,11 @@ def proc_cal(request):
             return HttpResponse(status=201) 
         except Exception as e:
             print(e)
-            return HttpResponse(status=400) 
+            e_data = {
+                'error': 'Calculate failure',
+                'message': 'unable to calculate results due to %s' % (e)
+            }
+            return JsonResponse(e_data, status=400)
 
 @csrf_exempt
 def proc_acq(request):
@@ -99,9 +102,13 @@ def proc_acq(request):
             ret = cal_data.cal_acq(int(data['cId']), data['time_acq_picker'], int(data['time_acq_range']), int(data['cri_num_p_day_m']), int(data['cri_num_p_day_f']), float(data['cri_end_day_acc_m']), float(data['cri_end_day_acc_f']), float(data['cri_max_rol_avg30_m']), float(data['cri_max_rol_avg30_f']), float(data['cri_stab_yes_m']), float(data['cri_stab_yes_f']), int(data['cri_rt_thres_m']), int(data['cri_rt_thres_f']), data['cri_filter_test_type'], float(data['cri_rol_poke_m']), float(data['cri_rol_poke_f']), int(data['cri_rol_poke_w_size'])  )
             #print(ret)
             return JsonResponse(ret, safe=False, status=201)
+            # safe=False explain https://dev.to/chryzcode/django-json-response-safe-false-4f9i
         except Exception as e:
-            print(e)
-            return HttpResponse(status=400) 
+            e_data = {
+                'error': 'Show failure',
+                'message': 'unable to show table due to %s' % (e)
+            }
+            return JsonResponse(e_data, status=400)
 
 @csrf_exempt
 def get_cohort_list(request):
@@ -111,7 +118,7 @@ def get_cohort_list(request):
             return JsonResponse(ret, safe=False, status=201)
         except Exception as e:
             print(e)
-            return HttpResponse(status=400) 
+            return JsonResponse({'error':str(e)}, safe=False, status=400) 
 
 @csrf_exempt
 def put_new_cohort(request):
@@ -123,7 +130,7 @@ def put_new_cohort(request):
             return JsonResponse(ret, safe=False, status=201)
         except Exception as e:
             print(e)
-            return HttpResponse(status=400) 
+            return JsonResponse({'error':str(e)}, safe=False, status=400) 
 
 @csrf_exempt
 def get_mouse_list(request):
@@ -135,7 +142,7 @@ def get_mouse_list(request):
             return JsonResponse(ret, safe=False, status=201)
         except Exception as e:
             print(e)
-            return HttpResponse(status=400) 
+            return JsonResponse({'error':str(e)}, safe=False, status=400) 
 
 @csrf_exempt
 def put_mouse_list(request):
@@ -147,7 +154,7 @@ def put_mouse_list(request):
             return JsonResponse(ret, safe=False, status=201)
         except Exception as e:
             print(e)
-            return HttpResponse(status=400) 
+            return JsonResponse({'error':str(e)}, safe=False, status=400) 
 
 
 @csrf_exempt
@@ -160,6 +167,6 @@ def del_mouse_data(request):
             return JsonResponse(ret, safe=False, status=201)
         except Exception as e:
             print(e)
-            return HttpResponse(status=400) 
+            return JsonResponse({'error':str(e)}, safe=False, status=400) 
 
 
