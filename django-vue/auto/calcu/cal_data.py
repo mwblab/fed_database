@@ -45,13 +45,10 @@ def proc_run(cohort_id):
     # for each mouse, find cal day
     for m in mouse_list:
         day_set = get_day_set(m)
+    
         for d_str in day_set: 
-            if DEBUG:
-                print("before date split")
             d_str_sp = d_str.split('-')
             d = date(year=int(d_str_sp[2]), month=int(d_str_sp[0]), day=int(d_str_sp[1]))
-            if DEBUG:
-                print("after date split")
             if DEBUG: 
                 print(m)
                 print(d)

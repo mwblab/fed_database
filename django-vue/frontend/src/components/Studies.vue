@@ -346,7 +346,8 @@ export default {
       if (response.status === 201) {
         await this.makeToast('Calculate: Successful!')
       } else {
-        await this.makeToast('Calculate: Failed!')
+        const edata = await response.json()
+        await this.makeToast('Calculate: Failed! Error message: ' + edata.message)
       }
     },
     async getAcqTable () {
@@ -376,13 +377,13 @@ export default {
         body: JSON.stringify(sData)
       }
       const response = await fetch('http://128.173.224.170:3000/api/auto/procacq/', requestOptions)
-      this.acq_table_tabs = await response.json()
       // console.log(this.acq_table)
       this.req_acq_loading = false
       if (response.status === 201) {
         // prepare acq disp
         this.acq_table_disp = []
         this.acq_table_test_type = []
+        this.acq_table_tabs = await response.json()
         this.acq_table = this.acq_table_tabs[0][0]
         for (let i = 0; i < this.acq_table.length; i++) {
           if (this.acq_table[i]['fed'] === 'pseufed') {
@@ -430,30 +431,33 @@ export default {
         await this.makeToast('Show: Successful!')
         this.acq_table_ready = 'true'
       } else {
-        await this.makeToast('Show: Failed!')
+        const edata = await response.json()
+        await this.makeToast('Show: Failed! Error message: ' + edata.message)
       }
     },
     /* get state data and export to XLSX */
     async exportFile () {
+      this.acq_table_tabs = ''
       await this.getAcqTable()
+      if (this.acq_table_tabs !== '') {
+        const wb = utils.book_new()
+        if (this.filter_selected !== 'ALL') {
+          const ws4 = utils.json_to_sheet(this.acq_table_tabs[1][0])
+          utils.book_append_sheet(wb, ws4, this.filter_selected + '_Data1')
+          const ws5 = utils.json_to_sheet(this.acq_table_tabs[1][1])
+          utils.book_append_sheet(wb, ws5, this.filter_selected + '_Data2')
+          const ws6 = utils.json_to_sheet(this.acq_table_tabs[1][2])
+          utils.book_append_sheet(wb, ws6, this.filter_selected + '_Data3')
+        }
 
-      const wb = utils.book_new()
-      if (this.filter_selected !== 'ALL') {
-        const ws4 = utils.json_to_sheet(this.acq_table_tabs[1][0])
-        utils.book_append_sheet(wb, ws4, this.filter_selected + '_Data1')
-        const ws5 = utils.json_to_sheet(this.acq_table_tabs[1][1])
-        utils.book_append_sheet(wb, ws5, this.filter_selected + '_Data2')
-        const ws6 = utils.json_to_sheet(this.acq_table_tabs[1][2])
-        utils.book_append_sheet(wb, ws6, this.filter_selected + '_Data3')
+        const ws1 = utils.json_to_sheet(this.acq_table_tabs[0][0])
+        utils.book_append_sheet(wb, ws1, 'All_Data1')
+        const ws2 = utils.json_to_sheet(this.acq_table_tabs[0][1])
+        utils.book_append_sheet(wb, ws2, 'All_Data2')
+        const ws3 = utils.json_to_sheet(this.acq_table_tabs[0][2])
+        utils.book_append_sheet(wb, ws3, 'All_Data3')
+        writeFileXLSX(wb, this.acq_table_export_filename + '.xlsx')
       }
-
-      const ws1 = utils.json_to_sheet(this.acq_table_tabs[0][0])
-      utils.book_append_sheet(wb, ws1, 'All_Data1')
-      const ws2 = utils.json_to_sheet(this.acq_table_tabs[0][1])
-      utils.book_append_sheet(wb, ws2, 'All_Data2')
-      const ws3 = utils.json_to_sheet(this.acq_table_tabs[0][2])
-      utils.book_append_sheet(wb, ws3, 'All_Data3')
-      writeFileXLSX(wb, this.acq_table_export_filename + '.xlsx')
     },
     // for uploader
     async uploadFiles () {
