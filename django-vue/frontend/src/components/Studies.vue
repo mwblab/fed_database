@@ -40,9 +40,14 @@
              </b-button>
         </div>
         <div v-else>
-          <b-button pill variant="primary" :disabled="!fileRecordsForUpload.length" @click="uploadFiles()">
+          <b-button id="upload_but" pill variant="primary" :disabled="!fileRecordsForUpload.length" @click="uploadFiles()">
           Upload {{ fileRecordsForUpload.length }} files
           </b-button>
+          <b-button id="upload_doc" pill size="sm" :pressed="true" variant="outline-info">Supported Format</b-button>
+          <b-popover target="upload_doc" triggers="hover">
+          <template #title>Supported uploaded format</template>
+          Filename: FEDXXX_MMDDYY_XX_DX_CODE.csv <span class="text-danger">All characters in the filename should be capitalized. (except .csv)</span>
+          </b-popover>
         </div>
 
         </b-container>
@@ -278,8 +283,8 @@ export default {
     makeToast (msg, append = true) {
       this.$bvToast.toast(msg, {
         title: 'Notification',
-        autoHideDelay: 4000,
         appendToast: append,
+        noAutoHide: true,
         variant: 'primary'
       })
     },
