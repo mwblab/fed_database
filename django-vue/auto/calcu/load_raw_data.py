@@ -33,11 +33,11 @@ def run():
             # import csv
             import_fed_csv(file_fp, ret_mouse)
 
-# sample: FED###_MMDDYY_D#_CODE
+# sample: FED###_MMDDYY_D#_CODE => FEDXXX_MMDDYY_XX_D4_FR3
 def get_mouse_obj(csv_path, cohort_id):
     file_name = os.path.basename(csv_path)
     file_name_wo_ext = os.path.splitext(file_name)[0]
-    file_name_sp = file_name_wo_ext.split("_")
+    file_name_sp = file_name_wo_ext.split("_", 4)
 
     try:
         #q = Mouse.objects.select_related('fed').get(fedDisplayName = "FED%03d" % devNum )
@@ -62,7 +62,8 @@ def get_mouse_obj(csv_path, cohort_id):
         raise
 
 
-# sample: FED###_MMDDYY_D#_CODE
+# sample: FED###_MMDDYY_D#_CODE (deprecated)
+# FEDXXX_MMDDYY_XX_D4_FR3
 # tbd: key error handling
 def import_fed_csv(csv_path, ret_mouse):
     cut_off_hr = 8
@@ -71,10 +72,11 @@ def import_fed_csv(csv_path, ret_mouse):
     # parse test_type, day, mmddyy
     file_name = os.path.basename(csv_path)
     file_name_wo_ext = os.path.splitext(file_name)[0]
-    file_name_sp = file_name_wo_ext.split("_", 3)
+    file_name_sp = file_name_wo_ext.split("_", 4)
+
     date_string = file_name_sp[1]
 
-    day_string = file_name_sp[2]
+    day_string = file_name_sp[3]
     num_day = int(day_string[1:])
 
     # deal with upload random suffix
