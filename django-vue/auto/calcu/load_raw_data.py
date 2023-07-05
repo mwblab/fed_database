@@ -5,6 +5,7 @@ import pytz
 import math
 import os, sys
 from auto.models import Mouse, FedDataRaw, Fed, FedDataTestType
+import re
 
 def run():
 
@@ -32,6 +33,25 @@ def run():
             
             # import csv
             import_fed_csv(file_fp, ret_mouse)
+
+# FEDXXX_MMDDYY_XX_D4_FR3
+def validate_uploaded_filename(csv_path):
+    file_name = os.path.basename(csv_path)
+    file_name_wo_ext = os.path.splitext(file_name)[0]
+
+    pattern = re.compile("FED\d{3}_\d{6}_\w{1,2}_D\d{1,3}_[\w_]+")
+
+    if not pattern.fullmatch( file_name_wo_ext ) :
+
+        # deal with upload random suffix
+        file_name_sp = file_name_wo_ext.split("_")
+        if len(file_name_sp[-1]) >= 5 and len(file_name_sp[-1]) <= 8:
+            file_name_wo_ext = "_".join(file_name_sp[:-1])
+        else:
+            file_name_wo_ext = "_".join(file_name_sp)
+
+        raise Exception("%s.csv filename format is not correct. Please follow format: FEDXXX_MMDDYY_XX_DX_CODE and upload again." % (file_name_wo_ext))
+
 
 # sample: FED###_MMDDYY_D#_CODE => FEDXXX_MMDDYY_XX_D4_FR3
 def get_mouse_obj(csv_path, cohort_id):

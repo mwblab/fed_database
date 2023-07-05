@@ -62,6 +62,10 @@ def proc_data_load(request):
             cohort_id = int(data['cId'])
             num_day = int(data['numDay'])
             file_list = data['fileList']
+            for f in file_list:
+                file_path = "media/" + f
+                load_raw_data.validate_uploaded_filename(file_path)
+
             for f in file_list: 
                 file_path = "media/" + f
                 cur_file = os.path.basename(file_path)
