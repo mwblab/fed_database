@@ -580,10 +580,18 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                 # binary
                 mouse_row_filter_count = 0
                 for day_index in range(pick_num_day_total):
-                    mouse_row[feddata_day_arr_name[day_index]] = mouse['thres_binary'][type_index*pick_num_day_total + day_index]
+                    # for FF rule
+                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == 'FF' and type_index != NUM_P_DAY and type_index != STAB_YES:
+                        mouse_row[feddata_day_arr_name[day_index]] = ''
+                    else:
+                        mouse_row[feddata_day_arr_name[day_index]] = mouse['thres_binary'][type_index*pick_num_day_total + day_index]
                     # if meet filter condition
                     if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type:
-                        mouse_row_filter['d_align'+str(mouse_row_filter_count+1)] = mouse['thres_binary'][type_index*pick_num_day_total + day_index]
+                        # for FF rule
+                        if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == 'FF' and type_index != NUM_P_DAY and type_index != STAB_YES:
+                            mouse_row_filter['d_align'+str(mouse_row_filter_count+1)] = ''
+                        else:
+                            mouse_row_filter['d_align'+str(mouse_row_filter_count+1)] = mouse['thres_binary'][type_index*pick_num_day_total + day_index]
                         mouse_row_filter_count += 1
                 # fill missing col
                 max_filter_count = max(filter_count_list)
@@ -597,10 +605,18 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                 mouse_row['threshold'] = "M:%.2f F:%.2f" % (feddata_threshold[type_index][MALE], feddata_threshold[type_index][FEMALE])
                 mouse_row_filter['threshold'] = "M:%.2f F:%.2f" % (feddata_threshold[type_index][MALE], feddata_threshold[type_index][FEMALE])
                 for day_index in range(pick_num_day_total):
-                    mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw'][type_index*pick_num_day_total + day_index]
+                    # for FF rule
+                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == 'FF' and type_index != NUM_P_DAY and type_index != STAB_YES:
+                        mouse_row[feddata_day_arr_name[day_index]+" "] = ''
+                    else:
+                        mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw'][type_index*pick_num_day_total + day_index]
                     # if meet filter condition
                     if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type:
-                        mouse_row_filter['d_align'+str(mouse_row_filter_count+1)+" "] = mouse['thres_raw'][type_index*pick_num_day_total + day_index]
+                        # for FF rule
+                        if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == 'FF' and type_index != NUM_P_DAY and type_index != STAB_YES:
+                            mouse_row_filter['d_align'+str(mouse_row_filter_count+1)+" "] = ''
+                        else:
+                            mouse_row_filter['d_align'+str(mouse_row_filter_count+1)+" "] = mouse['thres_raw'][type_index*pick_num_day_total + day_index]
                         mouse_row_filter_count += 1
                 # fill missing col
                 max_filter_count = max(filter_count_list)
@@ -618,6 +634,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                     final_acq_output_tabs[1].append(mouse_row)
                     if mouse_row_filter_count != 0:
                         final_acq_output_tabs_filtered[1].append(mouse_row_filter)
+
             elif type_index >= RT_AVG and type_index <= RT_RAW: # for rt
                 type_index_rt = type_index-len(feddata_datatype)
                 mouse_row['data_type'] = feddata_datatype_rt[ type_index_rt ]
@@ -650,10 +667,18 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
 
                 mouse_row_filter_count = 0
                 for day_index in range(pick_num_day_total):
-                    mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw_poke'][ 0*pick_num_day_total + day_index] # 0 for left poke data
+                    # for FF rule
+                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == 'FF':
+                        mouse_row[feddata_day_arr_name[day_index]+" "] = ''
+                    else:
+                        mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw_poke'][ 0*pick_num_day_total + day_index] # 0 for left poke data
                     # filter test type
                     if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type:
-                        mouse_row_filter['d_align'+str(mouse_row_filter_count+1)+""] = mouse['thres_raw_poke'][ 0*pick_num_day_total + day_index]
+                        # for FF rule
+                        if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == 'FF':
+                            mouse_row_filter['d_align'+str(mouse_row_filter_count+1)] = ''
+                        else:
+                            mouse_row_filter['d_align'+str(mouse_row_filter_count+1)] = mouse['thres_raw_poke'][ 0*pick_num_day_total + day_index]
                         mouse_row_filter_count += 1
                 # fill missing col
                 max_filter_count = max(filter_count_list)
@@ -674,10 +699,16 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
 
                 mouse_row_filter_count = 0
                 for day_index in range(pick_num_day_total):
-                    mouse_row_right[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw_poke'][ 1*pick_num_day_total + day_index] # 1 for right poke data
+                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == 'FF':
+                        mouse_row_right[feddata_day_arr_name[day_index]+" "] = ''
+                    else:
+                        mouse_row_right[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw_poke'][ 1*pick_num_day_total + day_index] # 1 for right poke data
                     # filter test type
                     if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type:
-                        mouse_row_right_filter['d_align'+str(mouse_row_filter_count+1)+""] = mouse['thres_raw_poke'][ 1*pick_num_day_total + day_index]
+                        if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == 'FF':
+                            mouse_row_right_filter['d_align'+str(mouse_row_filter_count+1)] = ''
+                        else:
+                            mouse_row_right_filter['d_align'+str(mouse_row_filter_count+1)] = mouse['thres_raw_poke'][ 1*pick_num_day_total + day_index]
                         mouse_row_filter_count += 1
                 # fill missing col
                 max_filter_count = max(filter_count_list)
