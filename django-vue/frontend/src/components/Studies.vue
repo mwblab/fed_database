@@ -46,7 +46,7 @@
           <b-button id="upload_doc" pill :pressed="true" variant="outline-info">Supported Format</b-button>
           <b-popover target="upload_doc" triggers="hover">
           <template #title>Supported uploaded format</template>
-          <p>Supported filename: FEDXXX_MMDDYY_XX_DX_CODE.csv <span class="text-danger">All characters in the filename should be capitalized. (except .csv)</span></p> <p>Supported CODE (test type): <strong>'FR1', 'FR3', '3R', 'PR', '3R_PR', 'PR_X', '3R_PR_X', 'QU', '3R_QU', 'QU_X', '3R_QU_X', 'E', 'RE', 'FF'</strong></p>
+          <p>Supported filename: FEDXXX_MMDDYY_XX_DX_CODE.csv <span class="text-danger">All characters in the filename should be capitalized. (except .csv)</span></p> <p>Supported CODE (test type): <strong>'FR1', 'FR3', '3R', 'PR', '3R_PR', 'PR_X', '3R_PR_X', 'QU', '3R_QU', 'QU_X', '3R_QU_X', 'E', 'RE', 'FF', 'FR5'</strong></p>
           </b-popover>
         </div>
 
@@ -272,7 +272,8 @@ export default {
         { value: '3R_QU', text: '3R_QU' },
         { value: 'E', text: 'E' },
         { value: 'RE', text: 'RE' },
-        { value: 'FF', text: 'FF' }
+        { value: 'FF', text: 'FF' },
+        { value: 'FR5', text: 'FR5' }
       ]
     }
   },

@@ -105,7 +105,7 @@ def import_fed_csv(csv_path, ret_mouse):
         test_type = "_".join(test_type_sp[:-1])
     else:
         test_type = "_".join(test_type_sp)
-    if test_type in ['FR1', 'FR3', '3R', 'PR', '3R_PR', 'PR_X', '3R_PR_X', 'QU', '3R_QU', 'QU_X', '3R_QU_X', 'E', 'RE', 'FF']:
+    if test_type in ['FR1', 'FR3', '3R', 'PR', '3R_PR', 'PR_X', '3R_PR_X', 'QU', '3R_QU', 'QU_X', '3R_QU_X', 'E', 'RE', 'FF', 'FR5']:
         try:
             FedDataTestType.objects.get(fedNumDay=num_day, mouse=ret_mouse)
         except FedDataTestType.DoesNotExist as err: 
@@ -160,8 +160,12 @@ def import_fed_csv(csv_path, ret_mouse):
             raise Exception("Active_Poke value is not matched: '%s'" % r["Active_Poke"])
 
         rt = r["Retrieval_Time"]
-        if math.isnan(rt) or rt == "Timed_Out":
+        if isinstance(rt, str):
             rt = -1
+        elif math.isnan(rt):
+            rt = -1
+        elif isinstance(rt, float):
+            rt = round(rt)
         else:
             rt = int(rt)
         
