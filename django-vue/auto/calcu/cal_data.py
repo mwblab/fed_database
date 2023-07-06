@@ -849,6 +849,7 @@ def del_mouse_data_fun(mouse_data):
 
     FedDataTestType.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
     FedDataRolling.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
+    FedDataRollingPoke.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
     FedDataByHour.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
     FedDataByDay.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
     # remove rolling, byhour, byday

@@ -49,8 +49,23 @@
           <p>Supported filename: FEDXXX_MMDDYY_XX_DX_CODE.csv <span class="text-danger">All characters in the filename should be capitalized. (except .csv)</span></p> <p>Supported CODE (test type): <strong>'FR1', 'FR3', '3R', 'PR', '3R_PR', 'PR_X', '3R_PR_X', 'QU', '3R_QU', 'QU_X', '3R_QU_X', 'E', 'RE', 'FF', 'FR5'</strong></p>
           </b-popover>
         </div>
-
         </b-container>
+
+       <b-container fluid>
+       <b-row class="mt-2 justify-content-md-center">
+       <b-col sm="6">
+         <b-form-textarea
+           id="upload_error_textarea"
+           v-model="upload_error_msgs"
+           placeholder="Upload progress messages"
+           plaintext
+           :value="text"
+           rows="4"
+         ></b-form-textarea>
+       </b-col>
+       </b-row>
+       </b-container>
+
         <br>
         <!--<p>Step 2. after uploading, calculate cohort data by hour, poke</p>!-->
         <div v-if="req_cal_loading">
@@ -274,7 +289,8 @@ export default {
         { value: 'RE', text: 'RE' },
         { value: 'FF', text: 'FF' },
         { value: 'FR5', text: 'FR5' }
-      ]
+      ],
+      upload_error_msgs: null
     }
   },
   methods: {
@@ -497,10 +513,12 @@ export default {
       const response = await fetch('http://128.173.224.170:3000/api/auto/procdl/', requestOptions)
       this.req_upload_loading = false
       if (response.status === 201) {
-        await this.makeToast('Upload: Successful!')
+        // await this.makeToast('Upload: Successful!')
+        this.upload_error_msgs = 'Upload: Successful!'
       } else {
         const edata = await response.json()
-        await this.makeToast('Upload: Failed! Error message: ' + edata.message)
+        // await this.makeToast('Upload: Failed! Error message: ' + edata.message)
+        this.upload_error_msgs = edata.error + '\n' + edata.message + '\n'
       }
     },
     // add files to queue

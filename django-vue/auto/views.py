@@ -55,28 +55,58 @@ def study_detail(request, pk):
 @csrf_exempt
 def proc_data_load(request): 
     if(request.method == 'POST'):
-        cur_file = ''
         try:
             # decode json
             data = JSONParser().parse(request) 
             cohort_id = int(data['cId'])
             num_day = int(data['numDay'])
             file_list = data['fileList']
-            for f in file_list:
-                file_path = "media/" + f
-                load_raw_data.validate_uploaded_filename(file_path)
 
+            error_msg_all = ''
             for f in file_list: 
                 file_path = "media/" + f
-                cur_file = os.path.basename(file_path)
-                ret_mouse = load_raw_data.get_mouse_obj(file_path , cohort_id)
-                load_raw_data.import_fed_csv(file_path, ret_mouse)
-            return HttpResponse(status=201) 
+                mouse_data = {}
+                try:
+                    # validate format
+                    load_raw_data.validate_uploaded_filename(file_path)
+                    # remove data mice at that day
+                    ret_mouse = load_raw_data.get_mouse_obj(file_path , cohort_id)
+                    mouse_data['del_mouse_id'] = ret_mouse.id
+                    # parse num_day 
+                    file_name = os.path.basename(file_path)
+                    file_name_wo_ext = os.path.splitext(file_name)[0]
+                    file_name_sp = file_name_wo_ext.split("_", 4)
+                    day_string = file_name_sp[3]
+                    num_day = int(day_string[1:])
+                    mouse_data['del_start_day'] = num_day
+                    mouse_data['del_end_day'] = num_day
+                    cal_data.del_mouse_data_fun(mouse_data)
+
+                    # upload cur file
+                    load_raw_data.import_fed_csv(file_path, ret_mouse)
+                except Exception as e:
+                    # save error msg
+                    error_msg_all += os.path.basename(file_path) + ": "
+                    error_msg_all += str(e) + "\n"
+
+                    # remove data mice at that day
+                    if 'del_end_day' in mouse_data:
+                        cal_data.del_mouse_data_fun(mouse_data)
+                    pass
+
+            if error_msg_all != '':
+                e_data = {
+                        'error': 'Upload batch files failure',
+                        'message': '%s' % (error_msg_all)
+                }
+                return JsonResponse(e_data, status=400)
+            else:
+                return HttpResponse(status=201) 
         except Exception as e:
             print(e)
             e_data = {
                 'error': 'Upload failure',
-                'message': 'unable to upload %s due to %s' % (cur_file,e)
+                'message': '%s' % (str(e))
             }
             return JsonResponse(e_data, status=400)
 # cal
