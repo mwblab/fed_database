@@ -126,39 +126,56 @@ def import_fed_csv(csv_path, ret_mouse):
     #print(test_type)
 
     f = pd.read_csv(csv_path)
+    f = f.rename(columns={' Event': 'Event', ' Active_Poke': 'Active_Poke', ' Retrieval_Time': 'Retrieval_Time', ' Left_Poke_Count': 'Left_Poke_Count', ' Right_Poke_Count': 'Right_Poke_Count', ' Pellet_Count': 'Pellet_Count', ' MM:DD:YYYY hh:mm:ss':'MM:DD:YYYY hh:mm:ss', ' Battery_Voltage': 'Battery_Voltage', ' Motor_Turns': 'Motor_Turns', ' Session_Type': 'Session_Type', 'Session_type': 'Session_Type' })
+
+    # validate headers
+    for hdr in ['Event', 'Active_Poke', 'Retrieval_Time', 'Left_Poke_Count', 'Right_Poke_Count', 'Pellet_Count', 'Battery_Voltage', 'Motor_Turns', 'Session_Type']:
+        if hdr not in f.iloc[0,:].index:
+            raise Exception("%s header is missing" % hdr)
+
     for i in range(f.shape[0]):
         r = f.iloc[i,:]
         #print(r.index)
 
         et = 0
-        if r[" Event"] == "Poke":
+        if r["Event"] == "Poke" or r["Event"] == "Left" or r["Event"] == "Right":
             et = 1
-        elif r[" Event"] == "Pellet":
+        elif r["Event"] == "Pellet":
             et = 2
+        elif r["Event"] == "LeftWithPellet" or r["Event"] == "RightWithPellet": # new event, no use atm
+            et = 3
         else:
-            raise Exception("Event value is not matched: '%s'" % r[" Event"])
+            raise Exception("Event value is not matched: '%s'" % r["Event"])
 
         ap = 0
-        if r[" Active_Poke"] == "Left":
+        if r["Active_Poke"] == "Left" and et == 1: # actual poke
             ap = 1
-        elif r[" Active_Poke"] == "Right":
+        elif r["Active_Poke"] == "Right" and et == 1: # actual poke
             ap = 2
+        elif r["Active_Poke"] == "Left" and et == 3: # poke with pellet, new event
+            ap = -1
+        elif r["Active_Poke"] == "Right" and et == 3: # poke with pellet, new event
+            ap = -2
         else:
-            raise Exception("Active_Poke value is not matched: '%s'" % r[" Active_Poke"])
+            raise Exception("Active_Poke value is not matched: '%s'" % r["Active_Poke"])
 
-        rt = r[" Retrieval_Time"]
+        rt = r["Retrieval_Time"]
         if math.isnan(rt):
             rt = -1
         else:
             rt = int(rt)
         
-        current_timestamp = str2datetime(r[0], date_string)
+        # validate data string
+        pattern = re.compile(".*? \d{1,2}:\d{1,2}:\d{1,2}")
+        if not pattern.fullmatch( r["MM:DD:YYYY hh:mm:ss"] ) :
+            raise Exception("hh:mm:ss values are not correct.")
+        current_timestamp = str2datetime(r["MM:DD:YYYY hh:mm:ss"], date_string)
         if i == 0:
             start_timestamp = current_timestamp
-            fd = FedDataRaw(actTimestamp=current_timestamp, actNumDay=num_day, deviceNumber=file_name_sp[0][3:], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
+            fd = FedDataRaw(actTimestamp=current_timestamp, actNumDay=num_day, deviceNumber=file_name_sp[0][3:], batteryVol=r["Battery_Voltage"], motorTurns=r["Motor_Turns"], sessionType=r["Session_Type"], event=et, activePoke=ap, leftPokeCount=r["Left_Poke_Count"], rightPokeCount=r["Right_Poke_Count"], pelletCount=r["Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
             fd.save()
         elif current_timestamp < start_timestamp + timedelta(hours=cut_off_hr):
-            fd = FedDataRaw(actTimestamp=current_timestamp, actNumDay=num_day, deviceNumber=file_name_sp[0][3:], batteryVol=r[2], motorTurns=r[3], sessionType=r[4], event=et, activePoke=ap, leftPokeCount=r[" Left_Poke_Count"], rightPokeCount=r[" Right_Poke_Count"], pelletCount=r[" Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
+            fd = FedDataRaw(actTimestamp=current_timestamp, actNumDay=num_day, deviceNumber=file_name_sp[0][3:], batteryVol=r["Battery_Voltage"], motorTurns=r["Motor_Turns"], sessionType=r["Session_Type"], event=et, activePoke=ap, leftPokeCount=r["Left_Poke_Count"], rightPokeCount=r["Right_Poke_Count"], pelletCount=r["Pellet_Count"], retrievalTime=rt, mouse=ret_mouse)
             fd.save()
 
 
