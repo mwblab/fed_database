@@ -285,7 +285,8 @@ export default {
       this.$bvToast.toast(msg, {
         title: 'Notification',
         appendToast: append,
-        noAutoHide: true,
+        // noAutoHide: true,
+        autoHideDelay: 8000,
         variant: 'primary'
       })
     },
@@ -462,6 +463,10 @@ export default {
         utils.book_append_sheet(wb, ws2, 'All_Data2')
         const ws3 = utils.json_to_sheet(this.acq_table_tabs[0][2])
         utils.book_append_sheet(wb, ws3, 'All_Data3')
+
+        const ws7 = utils.json_to_sheet(this.acq_table_tabs[2][0])
+        utils.book_append_sheet(wb, ws7, 'Metadata')
+
         writeFileXLSX(wb, this.acq_table_export_filename + '.xlsx')
       }
     },
