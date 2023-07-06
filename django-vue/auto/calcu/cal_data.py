@@ -543,12 +543,15 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
     ### formating output ###
     final_acq_output_tabs = {}
     final_acq_output_tabs_filtered = {}
+    final_metadata = {}
     for tab_index in range(4):
         final_acq_output_tabs[tab_index] = []
         final_acq_output_tabs_filtered[tab_index] = []
+    final_metadata[0] = []
     # get test type list and max filter count of each mouse
     test_type_list = {}
     filter_count_list = []
+    is_retest = 0
     for mouse in mouse_data_list:
         test_type_list[mouse['mouse_id']] = {}
         mouse_row_filter_count = 0
@@ -558,6 +561,9 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                 test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_offset]] = test_type[0].testType
                 if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_offset]] == cri_filter_test_type:
                     mouse_row_filter_count += 1
+                elif test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_offset]] == cri_filter_test_type+"_X":
+                    mouse_row_filter_count += 1
+                    is_retest = 1
             else:
                 test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_offset]] = ""
         filter_count_list.append(mouse_row_filter_count)
@@ -586,7 +592,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                     else:
                         mouse_row[feddata_day_arr_name[day_index]] = mouse['thres_binary'][type_index*pick_num_day_total + day_index]
                     # if meet filter condition
-                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type:
+                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type or test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type+"_X":
                         # for FF rule
                         if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == 'FF' and type_index != NUM_P_DAY and type_index != STAB_YES:
                             mouse_row_filter['d_align'+str(mouse_row_filter_count+1)] = ''
@@ -611,7 +617,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                     else:
                         mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw'][type_index*pick_num_day_total + day_index]
                     # if meet filter condition
-                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type:
+                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type or test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type+"_X":
                         # for FF rule
                         if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == 'FF' and type_index != NUM_P_DAY and type_index != STAB_YES:
                             mouse_row_filter['d_align'+str(mouse_row_filter_count+1)+" "] = ''
@@ -646,7 +652,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                 for day_index in range(pick_num_day_total):
                     mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw_rt'][ type_index_rt*pick_num_day_total + day_index]
                     # filter test type
-                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type:
+                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type or test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type+"_X":
                         mouse_row_filter['d_align'+str(mouse_row_filter_count+1)+""] = mouse['thres_raw_rt'][ type_index_rt*pick_num_day_total + day_index]
                         mouse_row_filter_count += 1
                 # fill missing col
@@ -673,7 +679,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                     else:
                         mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw_poke'][ 0*pick_num_day_total + day_index] # 0 for left poke data
                     # filter test type
-                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type:
+                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type or test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type+"_X":
                         # for FF rule
                         if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == 'FF':
                             mouse_row_filter['d_align'+str(mouse_row_filter_count+1)] = ''
@@ -704,7 +710,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                     else:
                         mouse_row_right[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw_poke'][ 1*pick_num_day_total + day_index] # 1 for right poke data
                     # filter test type
-                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type:
+                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type or test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type+"_X":
                         if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == 'FF':
                             mouse_row_right_filter['d_align'+str(mouse_row_filter_count+1)] = ''
                         else:
@@ -743,7 +749,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
             else:
                 mouse_row[feddata_day_arr_name[day_offset]] = ""
             # date info for filter
-            if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_offset]] == cri_filter_test_type:
+            if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_offset]] == cri_filter_test_type or test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_offset]] == cri_filter_test_type+"_X":
                 mouse_row_filter['d_align'+str(mouse_row_filter_count+1)] = feddata_day_arr_name[day_offset]
                 mouse_row_filter_count += 1
         # fill missing col
@@ -759,7 +765,12 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
             final_acq_output_tabs_filtered[1].append(mouse_row_filter)
             final_acq_output_tabs_filtered[2].append(mouse_row_filter)
 
-    return [final_acq_output_tabs, final_acq_output_tabs_filtered]
+    # prepare metadata table
+    meta = {}
+    meta['filtered_test_type_contains_retest_X'] = is_retest
+    final_metadata[0].append(meta)
+
+    return [final_acq_output_tabs, final_acq_output_tabs_filtered, final_metadata]
 
 def get_feddate_array_name(feddata_day, pick_num_day_start, pick_num_day_end):
     # get feddate array name
