@@ -137,6 +137,18 @@ def put_new_cohort(request):
             return JsonResponse({'error':str(e)}, safe=False, status=400) 
 
 @csrf_exempt
+def del_cohort(request):
+    if(request.method == 'POST'):
+        try:
+            # decode json
+            data = JSONParser().parse(request) 
+            ret = cal_data.del_cohort_fun(data)
+            return JsonResponse(ret, safe=False, status=201)
+        except Exception as e:
+            print(e)
+            return JsonResponse({'error':str(e)}, safe=False, status=400) 
+
+@csrf_exempt
 def get_mouse_list(request):
     if(request.method == 'POST'):
         try:

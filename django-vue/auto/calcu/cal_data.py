@@ -802,6 +802,11 @@ def put_new_cohort_fun(cohort_name):
 
     return []
 
+def del_cohort_fun(cohort_name):
+    Cohort.objects.filter(cohortDisplayName=cohort_name).delete()
+    return []
+
+
 def get_mouse_list_fun(cohort_id):
     output_mouse_list = []
     mouses = Mouse.objects.select_related('fed').filter(fed__cohort_id = cohort_id)

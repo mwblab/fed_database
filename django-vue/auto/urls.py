@@ -11,6 +11,7 @@ urlpatterns = [
         path('auto/procacq/', views.proc_acq),
         path('auto/get_cohort_list/', views.get_cohort_list),
         path('auto/put_new_cohort/', views.put_new_cohort),
+        path('auto/del_cohort/', views.del_cohort),
         path('auto/get_mouse_list/', views.get_mouse_list),
         path('auto/put_mouse_list/', views.put_mouse_list),
         path('auto/del_mouse_data/', views.del_mouse_data)

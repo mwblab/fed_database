@@ -40,6 +40,9 @@
       <hr>
       <hr>
 
+      <h2>Remove Cohort</h2>
+      <input id="rm_cohort" type="text" :style="{ width: '250px' }" v-model="rm_cohort_name" placeholder="Remove Cohort Name (20chars)">
+      <button v-if="rm_cohort_name" v-on:click="RmCohort">Remove</button>
     </div>
 </template>
 
@@ -68,6 +71,7 @@ export default {
       ],
       // add new cohort
       new_cohort_name: null,
+      rm_cohort_name: null,
       // del mouse data
       del_mouse_id: null,
       del_start_day: null,
@@ -155,6 +159,27 @@ export default {
           }
         } catch (error) {
           await this.makeToast('Add New Cohort: Failed!')
+          console.log(error)
+        }
+      }
+    },
+    async RmCohort () {
+      if (this.rm_cohort_name) {
+        try {
+          const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.rm_cohort_name)
+          }
+          const response = await fetch('http://128.173.224.170:3000/api/auto/del_cohort/', requestOptions)
+          if (response.status === 201) {
+            await this.makeToast('Remove Cohort: Successful!')
+            await this.refreshCohortList()
+          } else {
+            await this.makeToast('Remove Cohort: Failed!')
+          }
+        } catch (error) {
+          await this.makeToast('Remove Cohort: Failed!')
           console.log(error)
         }
       }

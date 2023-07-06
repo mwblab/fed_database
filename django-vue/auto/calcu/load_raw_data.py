@@ -160,7 +160,7 @@ def import_fed_csv(csv_path, ret_mouse):
             raise Exception("Active_Poke value is not matched: '%s'" % r["Active_Poke"])
 
         rt = r["Retrieval_Time"]
-        if math.isnan(rt):
+        if math.isnan(rt) or rt == "Timed_Out":
             rt = -1
         else:
             rt = int(rt)
