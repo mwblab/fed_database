@@ -148,9 +148,9 @@ def import_fed_csv(csv_path, ret_mouse):
             raise Exception("Event value is not matched: '%s'" % r["Event"])
 
         ap = 0
-        if r["Active_Poke"] == "Left" and et == 1: # actual poke
+        if r["Active_Poke"] == "Left" and et < 3: # actual poke
             ap = 1
-        elif r["Active_Poke"] == "Right" and et == 1: # actual poke
+        elif r["Active_Poke"] == "Right" and et < 3: # actual poke
             ap = 2
         elif r["Active_Poke"] == "Left" and et == 3: # poke with pellet, new event
             ap = -1
