@@ -162,11 +162,15 @@ def cal_rolling_avg_nonwindow(m, d):
     if onset_index >= total_qs:
         return
     for i in range(len(qs)):
+        if onset_index+i >=len(qs): # can not find onset, return
+            return
+
         if qs[onset_index+i].event == 2: # ignore pellet count record for onset
             continue
         else:
             onset_index = onset_index+i
             break
+
     onset_time = qs[onset_index].actTimestamp
 
     # ignore all pellet counts
