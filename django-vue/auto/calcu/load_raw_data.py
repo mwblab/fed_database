@@ -160,14 +160,12 @@ def import_fed_csv(csv_path, ret_mouse):
             raise Exception("Active_Poke value is not matched: '%s'" % r["Active_Poke"])
 
         rt = r["Retrieval_Time"]
-        if isinstance(rt, str):
+        if rt == "Timed_Out" or rt == "Timed_out":
             rt = -1
-        elif math.isnan(rt):
+        elif math.isnan(float(rt)):
             rt = -1
-        elif isinstance(rt, float):
-            rt = round(rt)
         else:
-            rt = int(rt)
+            rt = round(float(rt))
         
         # validate data string
         pattern = re.compile(".*? \d{1,2}:\d{1,2}:\d{1,2}")
