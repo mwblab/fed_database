@@ -92,6 +92,9 @@ def get_day_set(m):
 
 def cal_hr_day(m, d):
     qs = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d)
+    if len(qs) < 2:
+        print("WARNING: qs < 2")
+        return
     # get active poke
     active_poke = qs[0].activePoke  
     fedNumDay = qs[0].actNumDay
