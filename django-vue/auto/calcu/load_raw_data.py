@@ -42,7 +42,6 @@ def validate_uploaded_filename(csv_path):
     pattern = re.compile("FED\d{3}_\d{6}_\w{1,2}_D\d{1,3}_[\w_]+")
 
     if not pattern.fullmatch( file_name_wo_ext ) :
-
         # deal with upload random suffix
         file_name_sp = file_name_wo_ext.split("_")
         if len(file_name_sp[-1]) >= 5 and len(file_name_sp[-1]) <= 8:
@@ -50,7 +49,17 @@ def validate_uploaded_filename(csv_path):
         else:
             file_name_wo_ext = "_".join(file_name_sp)
 
-        raise Exception("%s.csv filename format is not correct. Please follow format: FEDXXX_MMDDYY_XX_DX_CODE and upload again." % (file_name_wo_ext))
+        raise Exception("%s.csv filename format is not correct. Please follow the format: FEDXXX_MMDDYY_XX_DX_CODE and upload again." % (file_name_wo_ext))
+
+    m = re.match(r"FED\d{3}_(\d{6})_\w{1,2}_D\d{1,3}_[\w_]+", file_name_wo_ext)
+    date_format = '%m%d%y'
+    mdy = m.group(1)
+    try:
+        # formatting the date using strptime() function
+        dateObject = datetime.strptime(mdy, date_format)
+    # If the date validation goes wrong
+    except ValueError:
+        raise Exception("%s.csv filename MMDDYY format is not correct. Not a valid month, day or year." % (file_name_wo_ext))
 
 
 # sample: FED###_MMDDYY_D#_CODE => FEDXXX_MMDDYY_XX_D4_FR3
@@ -171,6 +180,10 @@ def import_fed_csv(csv_path, ret_mouse):
         pattern = re.compile(".*? \d{1,2}:\d{1,2}:\d{1,2}")
         if not pattern.fullmatch( r["MM:DD:YYYY hh:mm:ss"] ) :
             raise Exception("hh:mm:ss values are not correct.")
+        m = re.match(r".*? (\d{1,2}):(\d{1,2}):(\d{1,2})", r["MM:DD:YYYY hh:mm:ss"])
+        if int(m.group(1)) <= -1 or int(m.group(1)) >=25 or int(m.group(2)) <= -1 or int(m.group(2)) >= 60 or int(m.group(3)) <= -1 or int(m.group(3)) >= 60:
+            raise Exception("hh:mm:ss values are not correct. One of them is not a valid sec, minute or hour.")
+
         current_timestamp = str2datetime(r["MM:DD:YYYY hh:mm:ss"], date_string)
         if i == 0:
             start_timestamp = current_timestamp
