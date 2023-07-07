@@ -104,17 +104,22 @@ def cal_hr_day(m, d):
     rt_avg, rt_sem, rt_pel, rt_raw = cal_rt_of_day(m, d, fedNumDay, onset_timestamp)
 
     # for day and hr 
-    pre_l=0
-    pre_r=0
-    pre_p=0
+    total_l = 0
+    total_r = 0
+    total_p = 0
     for hr in range(8):
-        qs_hr = qs.filter(actTimestamp__lte=(onset_timestamp+timedelta(hours=hr+1)))
-        qs_hr_last = qs_hr.latest('actTimestamp')
+        qs_hr = qs.filter(actTimestamp__lte=(onset_timestamp+timedelta(hours=hr+1)), actTimestamp__gt=(onset_timestamp+timedelta(hours=hr)))
         
-        cur_l = qs_hr_last.leftPokeCount - pre_l
-        cur_r = qs_hr_last.rightPokeCount - pre_r
-        cur_p = qs_hr_last.pelletCount - pre_p
-
+        qs_hr_poke_left = qs_hr.filter(activePoke = 1, event = 1 )
+        qs_hr_poke_right = qs_hr.filter(activePoke = 2, event = 1 )
+        qs_hr_pc = qs_hr.filter(event = 2 )
+        cur_l = len(qs_hr_poke_left)
+        cur_r = len(qs_hr_poke_right)
+        cur_p = len(qs_hr_pc)
+        total_l += cur_l
+        total_r += cur_r
+        total_p += cur_p
+        
         # count poke acc
         poke_acc=0;
         if cur_l+cur_r == 0:
@@ -126,28 +131,24 @@ def cal_hr_day(m, d):
         else:
             raise Exception("Invalid active_poke code.") 
 
+        print("before insert pokeAcc=%f cur_l %d curl_r %d p %d" % (poke_acc, cur_l, cur_r, cur_p))
         # insert into db
         fedhr = FedDataByHour(leftPokeCount=cur_l, rightPokeCount=cur_r, pelletCount=cur_p, activePoke=active_poke, pokeAcc=poke_acc, startTime=onset_timestamp+timedelta(hours=hr), endTime=onset_timestamp+timedelta(hours=hr+1), numHour=hr+1, fedDate=d, fedNumDay=fedNumDay, mouse=m)
         fedhr.save()
 
-        # update pre_l, pre_r, pre_p 
-        pre_l = qs_hr_last.leftPokeCount
-        pre_r = qs_hr_last.rightPokeCount
-        pre_p = qs_hr_last.pelletCount
-
         # insert into day table
         if hr == 7: 
             poke_acc=0;
-            if (qs_hr_last.leftPokeCount+qs_hr_last.rightPokeCount) == 0:
+            if (total_l+total_r) == 0:
                 poke_acc=0;
             elif active_poke == 1: # left
-                poke_acc = qs_hr_last.leftPokeCount / (qs_hr_last.leftPokeCount+qs_hr_last.rightPokeCount)
+                poke_acc = total_l / (total_l+total_r)
             elif active_poke == 2: #right
-                poke_acc = qs_hr_last.rightPokeCount / (qs_hr_last.leftPokeCount+qs_hr_last.rightPokeCount)
+                poke_acc = total_r / (total_l+total_r)
             else:
                 raise Exception("Invalid active_poke code.") 
 
-            fedday = FedDataByDay(rtAvg=rt_avg, rtSem=rt_sem, rtPelletCount=rt_pel, rtRaw=rt_raw, leftPokeCount=qs_hr_last.leftPokeCount, rightPokeCount=qs_hr_last.rightPokeCount, pelletCount=qs_hr_last.pelletCount, activePoke=active_poke, pokeAcc=poke_acc, fedDate=d, fedNumDay=fedNumDay, mouse=m)
+            fedday = FedDataByDay(rtAvg=rt_avg, rtSem=rt_sem, rtPelletCount=rt_pel, rtRaw=rt_raw, leftPokeCount=total_l, rightPokeCount=total_r, pelletCount=total_p, activePoke=active_poke, pokeAcc=poke_acc, fedDate=d, fedNumDay=fedNumDay, mouse=m)
             fedday.save()
 
 

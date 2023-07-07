@@ -59,7 +59,6 @@
            v-model="upload_error_msgs"
            placeholder="Upload progress messages"
            plaintext
-           :value="text"
            rows="4"
          ></b-form-textarea>
        </b-col>
