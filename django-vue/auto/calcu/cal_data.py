@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Count
 import numpy as np
 import copy
+import math
 
 NUM_P_DAY=0
 END_DAY_ACC=1
@@ -892,7 +893,11 @@ def cal_rt_of_day(m, d, fedNumDay, onset_timestamp):
     # mean and sem 
     rt_np_arr = np.array(rt_list)
     rt_sem = round(np.std(rt_np_arr, ddof=1) / np.sqrt(np.size(rt_np_arr)), 4)
+    if math.isnan(rt_sem):
+        rt_sem = 0
     rt_avg = round(np.mean(rt_np_arr), 4)
+    if math.isnan(rt_avg):
+        rt_avg = 0
     rt_raw = ",".join(str(v) for v in rt_list)
 
     return rt_avg, rt_sem, rt_pel, rt_raw
