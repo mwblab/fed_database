@@ -90,12 +90,13 @@ def get_day_set(m):
 def cal_hr_day(m, fed_day):
     print(fed_day)
     qs = FedDataRaw.objects.filter(mouse=m, actNumDay=fed_day)
-    if len(qs) < 2:
-        print("WARNING: qs < 2")
-        return
     # get active poke
     active_poke = qs[0].activePoke  
-    onset_timestamp = qs[1].actTimestamp # onset from the second transaction
+    if len(qs) < 2:
+        print("WARNING: qs < 2")
+        onset_timestamp = qs[0].actTimestamp # deal with only 1 transaction
+    else:
+        onset_timestamp = qs[1].actTimestamp # onset from the second transaction
 
     # for retrieval time
     rt_avg, rt_sem, rt_pel, rt_raw = cal_rt_of_day(m, fed_day, onset_timestamp)
@@ -481,10 +482,17 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                             # filter out 
                             rt_np_arr_filtered = rt_np_arr[ (rt_np_arr < feddata_threshold_rt[mouse_thres_index]) ] 
 
-                            cur_day_rt_sem = round(np.std(rt_np_arr_filtered, ddof=1) / np.sqrt(np.size(rt_np_arr_filtered)), 4)
-                            cur_day_rt_avg = round(np.mean(rt_np_arr_filtered), 4)
-                            cur_day_rt_raw = ",".join(str(v) for v in rt_np_arr_filtered.tolist())
-                            cur_day_rt_pc = rt_np_arr_filtered.size 
+                            if rt_np_arr_filtered: 
+                                cur_day_rt_sem = round(np.std(rt_np_arr_filtered, ddof=1) / np.sqrt(np.size(rt_np_arr_filtered)), 4)
+                                cur_day_rt_avg = round(np.mean(rt_np_arr_filtered), 4)
+                                cur_day_rt_raw = ",".join(str(v) for v in rt_np_arr_filtered.tolist())
+                                cur_day_rt_pc = rt_np_arr_filtered.size 
+                            else:
+                                cur_day_rt_sem = 0
+                                cur_day_rt_avg = 0
+                                cur_day_rt_raw = ""
+                                cur_day_rt_pc = 0
+
                         else:
                             cur_day_rt_sem = 0
                             cur_day_rt_avg = 0
