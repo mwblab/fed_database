@@ -279,7 +279,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
 
     pick_num_day_end = FedDataByDay.objects.filter(mouse__fed__cohort_id=cohort_id, fedDate=pick_date)
     if not pick_num_day_end:
-        last_day = FedDataByDay.objects.filter(mouse__fed__cohort_id=cohort_id).order_by('fedDate').last()
+        last_day = FedDataByDay.objects.filter(mouse__fed__cohort_id=cohort_id).order_by('fedNumDay').last()
         if last_day:
             pick_date = last_day.fedDate
             pick_num_day_end = last_day.fedNumDay
@@ -305,7 +305,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
     # get byday feddata
     feddata_cohort = FedDataByDay.objects.filter(mouse__fed__cohort_id=cohort_id, fedNumDay__gte=pick_num_day_start, fedNumDay__lte=pick_num_day_end)
     # get rolling acc day info, different structure
-    feddata_cohort_rolling = FedDataRolling.objects.filter(mouse__fed__cohort_id=cohort_id, fedNumDay__gte=pick_num_day_start, fedNumDay__lte=pick_num_day_end, windowSize=window_size).values('fedDate', 'fedNumDay', 'mouse_id').annotate(rollMaxPokeAcc=Max('pokeAcc')) # group by fedDate, fedNumDay, mouse_id and max pokeAcc
+    feddata_cohort_rolling = FedDataRolling.objects.filter(mouse__fed__cohort_id=cohort_id, fedNumDay__gte=pick_num_day_start, fedNumDay__lte=pick_num_day_end, windowSize=window_size).values('fedNumDay', 'mouse_id').annotate(rollMaxPokeAcc=Max('pokeAcc')) # group by fedNumDay, mouse_id and max pokeAcc
 
     feddata_day_arr_name = get_feddate_array_name(feddata_cohort, pick_num_day_start, pick_num_day_end)
     # prepare datatype, threshold
