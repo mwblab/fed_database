@@ -46,29 +46,25 @@ def proc_run(cohort_id):
     # for each mouse, find cal day
     for m in mouse_list:
         day_set = get_day_set(m)
-    
-        for d_str in day_set: 
-            d_str_sp = d_str.split('-')
-            d = date(year=int(d_str_sp[2]), month=int(d_str_sp[0]), day=int(d_str_sp[1]))
+        for fed_day in day_set: 
             if DEBUG: 
                 print(m)
-                print(d)
                 print("cal_hr_day")
-            cal_hr_day(m, d)
+            cal_hr_day(m, fed_day)
 
             if DEBUG:
                 print("cal_rolling_avg_nonwindow")
-            cal_rolling_avg_nonwindow(m, d)
+            cal_rolling_avg_nonwindow(m, fed_day)
             if DEBUG:
                 print("cal_rolling_avg_nonwindow_cur_poke")
-            cal_rolling_avg_nonwindow_cur_poke(m, d)
+            cal_rolling_avg_nonwindow_cur_poke(m, fed_day)
 
             if DEBUG:
                 print("cal_rolling_window")
-            cal_rolling_window(m, d, 30)
+            cal_rolling_window(m, fed_day, 30)
             if DEBUG:
                 print("cal_rolling_window_cur_poke")
-            cal_rolling_window_cur_poke(m, d, 30)
+            cal_rolling_window_cur_poke(m, fed_day, 30)
 
 
 def get_mouse_list(cohort_id):
@@ -76,32 +72,33 @@ def get_mouse_list(cohort_id):
     return list(qs) 
 
 def get_day_set(m):
-    trans_from_caled_day = FedDataByDay.objects.filter(mouse=m).order_by('fedDate')
-    trans_from_raw = FedDataRaw.objects.filter(mouse=m).values(feddate=TruncDate('actTimestamp')).annotate(Max('feddate')).order_by('feddate')
+    trans_from_caled_day = FedDataByDay.objects.filter(mouse=m)
+    trans_from_raw = FedDataRaw.objects.filter(mouse=m).values('actNumDay').annotate(fedNumDay=Max("actNumDay"))
+
     trans_from_caled_day_set = set()
     for t in trans_from_caled_day:
-        date_time = t.fedDate.strftime("%m-%d-%Y")
-        trans_from_caled_day_set.add(date_time)
+        fed_day = t.fedNumDay
+        trans_from_caled_day_set.add(fed_day)
 
     trans_from_raw_set = set()
     for t in trans_from_raw:
-        date_time = t['feddate'].strftime("%m-%d-%Y")
-        trans_from_raw_set.add(date_time)
+        fed_day = t['actNumDay']
+        trans_from_raw_set.add(fed_day)
 
     return(trans_from_raw_set-trans_from_caled_day_set)
 
-def cal_hr_day(m, d):
-    qs = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d)
+def cal_hr_day(m, fed_day):
+    print(fed_day)
+    qs = FedDataRaw.objects.filter(mouse=m, actNumDay=fed_day)
     if len(qs) < 2:
         print("WARNING: qs < 2")
         return
     # get active poke
     active_poke = qs[0].activePoke  
-    fedNumDay = qs[0].actNumDay
     onset_timestamp = qs[1].actTimestamp # onset from the second transaction
 
     # for retrieval time
-    rt_avg, rt_sem, rt_pel, rt_raw = cal_rt_of_day(m, d, fedNumDay, onset_timestamp)
+    rt_avg, rt_sem, rt_pel, rt_raw = cal_rt_of_day(m, fed_day, onset_timestamp)
 
     # for day and hr 
     total_l = 0
@@ -133,7 +130,7 @@ def cal_hr_day(m, d):
 
         print("before insert pokeAcc=%f cur_l %d curl_r %d p %d" % (poke_acc, cur_l, cur_r, cur_p))
         # insert into db
-        fedhr = FedDataByHour(leftPokeCount=cur_l, rightPokeCount=cur_r, pelletCount=cur_p, activePoke=active_poke, pokeAcc=poke_acc, startTime=onset_timestamp+timedelta(hours=hr), endTime=onset_timestamp+timedelta(hours=hr+1), numHour=hr+1, fedDate=d, fedNumDay=fedNumDay, mouse=m)
+        fedhr = FedDataByHour(leftPokeCount=cur_l, rightPokeCount=cur_r, pelletCount=cur_p, activePoke=active_poke, pokeAcc=poke_acc, startTime=onset_timestamp+timedelta(hours=hr), endTime=onset_timestamp+timedelta(hours=hr+1), numHour=hr+1, fedDate=onset_timestamp.date(), fedNumDay=fed_day, mouse=m)
         fedhr.save()
 
         # insert into day table
@@ -148,18 +145,20 @@ def cal_hr_day(m, d):
             else:
                 raise Exception("Invalid active_poke code.") 
 
-            fedday = FedDataByDay(rtAvg=rt_avg, rtSem=rt_sem, rtPelletCount=rt_pel, rtRaw=rt_raw, leftPokeCount=total_l, rightPokeCount=total_r, pelletCount=total_p, activePoke=active_poke, pokeAcc=poke_acc, fedDate=d, fedNumDay=fedNumDay, mouse=m)
+            fedday = FedDataByDay(rtAvg=rt_avg, rtSem=rt_sem, rtPelletCount=rt_pel, rtRaw=rt_raw, leftPokeCount=total_l, rightPokeCount=total_r, pelletCount=total_p, activePoke=active_poke, pokeAcc=poke_acc, fedDate=onset_timestamp.date(), fedNumDay=fed_day, mouse=m)
             fedday.save()
 
 
 
 # cal rolling avg of poke_acc
-def cal_rolling_avg_nonwindow(m, d):
-    qs = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d)
+def cal_rolling_avg_nonwindow(m, fed_day):
+    qs = FedDataRaw.objects.filter(mouse=m, actNumDay=fed_day)
+    if len(qs) < 2:
+        print("WARNING: qs < 2")
+        return
 
     # get active poke
     active_poke = qs[0].activePoke  
-    fedNumDay = qs[0].actNumDay
 
     # get onset time
     total_qs = len(qs)
@@ -179,13 +178,13 @@ def cal_rolling_avg_nonwindow(m, d):
     onset_time = qs[onset_index].actTimestamp
 
     # ignore all pellet counts
-    qs_poke = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d, event=1, actTimestamp__gte=onset_time)
+    qs_poke = FedDataRaw.objects.filter(mouse=m, actNumDay=fed_day, event=1, actTimestamp__gte=onset_time)
     #print(len(qs_poke))
 
     #count qs_acc
     for i in range(len(qs_poke)):
-        lc = qs_poke[i].leftPokeCount
-        rc = qs_poke[i].rightPokeCount
+        lc = qs_poke[i].leftPokeCount # TBD, have to remove pokeWithPellet
+        rc = qs_poke[i].rightPokeCount # TBD, have to remove pokeWithPellet
         ts = qs_poke[i].actTimestamp
 
         # cal poke acc
@@ -199,18 +198,20 @@ def cal_rolling_avg_nonwindow(m, d):
         else:
             raise Exception("Invalid active_poke code.") 
 
-        fdr = FedDataRolling(pokeAcc=poke_acc, windowSize=1, startTime=ts, endTime=ts, fedDate=d, fedNumDay=fedNumDay, mouse=m)
+        fdr = FedDataRolling(pokeAcc=poke_acc, windowSize=1, startTime=ts, endTime=ts, fedDate=ts.date(), fedNumDay=fed_day, mouse=m)
         fdr.save()
 
-
 # cal rolling avg of cur poke
-def cal_rolling_avg_nonwindow_cur_poke(m, d):
-    qs = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d)
-    fedNumDay = qs[0].actNumDay
+def cal_rolling_avg_nonwindow_cur_poke(m, fed_day):
+    qs = FedDataRaw.objects.filter(mouse=m, actNumDay=fed_day)
+    if len(qs) < 2:
+        print("WARNING: qs < 2")
+        return
 
     # ignore all pellet counts
     onset_time = qs[0].actTimestamp
-    qs_poke = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d, event=1, actTimestamp__gte=onset_time) 
+    qs_poke = FedDataRaw.objects.filter(mouse=m, actNumDay=fed_day, event=1, actTimestamp__gte=onset_time) 
+
     if qs_poke and len(qs_poke) > 3: # at least 2 records
         rc_pre = -1
         for i in range(len(qs_poke)):
@@ -218,21 +219,21 @@ def cal_rolling_avg_nonwindow_cur_poke(m, d):
                 rc_pre = qs_poke[i].rightPokeCount
                 continue
             cur_poke = 1 # default = left poke
-            if qs_poke[i].rightPokeCount != rc_pre: #right count increase
+            if qs_poke[i].rightPokeCount != rc_pre: #right count increase #TBD: need to verify poke with pellets
                 cur_poke = 0 # set 0 for right poke
             # update rc_pre
             rc_pre = qs_poke[i].rightPokeCount
             ts = qs_poke[i].actTimestamp
 
-            fdr = FedDataRollingPoke(curPoke=cur_poke, windowSize=1, startTime=ts, endTime=ts, fedDate=d, fedNumDay=fedNumDay, mouse=m)
+            fdr = FedDataRollingPoke(curPoke=cur_poke, windowSize=1, startTime=ts, endTime=ts, fedDate=ts.date(), fedNumDay=fed_day, mouse=m)
             fdr.save()
 
 
 # cal rolling avg of poke_acc
-def cal_rolling_window(m, d, win_size):
+def cal_rolling_window(m, fed_day, win_size):
     #start rolling
     #https://stackoverflow.com/questions/48790322/fast-moving-average-computation-with-django-orm
-    items = FedDataRolling.objects.filter(windowSize=1, mouse=m, fedDate=d).annotate(
+    items = FedDataRolling.objects.filter(windowSize=1, mouse=m, fedNumDay=fed_day).annotate(
             avg=Window(
                 expression=Avg('pokeAcc'), 
                 order_by=F('id').asc(), 
@@ -243,35 +244,25 @@ def cal_rolling_window(m, d, win_size):
     #print(items[29].avg)
     for i in range(win_size-1, len(items)):
         avg = items[i].avg
-        fdr = FedDataRolling(pokeAcc=avg, windowSize=win_size, startTime=items[i-(win_size-1)].startTime, endTime=items[i].startTime, fedDate=d, fedNumDay=items[i].fedNumDay, mouse=m)
+        fdr = FedDataRolling(pokeAcc=avg, windowSize=win_size, startTime=items[i-(win_size-1)].startTime, endTime=items[i].startTime, fedDate=items[i].startTime.date(), fedNumDay=fed_day, mouse=m)
         fdr.save()
 
 
 # cal rolling sum of cur poke: left
-def cal_rolling_window_cur_poke(m, d, win_size):
+def cal_rolling_window_cur_poke(m, fed_day, win_size):
     #start rolling
     #https://stackoverflow.com/questions/48790322/fast-moving-average-computation-with-django-orm
-    item = []
-    if (isinstance(d, int)):
-        items = FedDataRollingPoke.objects.filter(windowSize=1, mouse=m, fedNumDay=d).annotate(
-            total_left_pokes=Window(
-                expression=Sum('curPoke'), 
-                order_by=F('id').asc(), 
-                frame=RowRange(start=(0-win_size+1),end=0)
-                )
+    items = FedDataRollingPoke.objects.filter(windowSize=1, mouse=m, fedNumDay=fed_day).annotate(
+        total_left_pokes=Window(
+            expression=Sum('curPoke'), 
+            order_by=F('id').asc(), 
+            frame=RowRange(start=(0-win_size+1),end=0)
             )
-    else:
-        items = FedDataRollingPoke.objects.filter(windowSize=1, mouse=m, fedDate=d).annotate(
-            total_left_pokes=Window(
-                expression=Sum('curPoke'), 
-                order_by=F('id').asc(), 
-                frame=RowRange(start=(0-win_size+1),end=0)
-                )
-            )
+        )
 
     for i in range(win_size-1, len(items)):
         total_left_pokes = items[i].total_left_pokes
-        fdrp = FedDataRollingPoke(curPoke=total_left_pokes, windowSize=win_size, startTime=items[i-(win_size-1)].startTime, endTime=items[i].startTime, fedDate=items[i].fedDate, fedNumDay=items[i].fedNumDay, mouse=m)
+        fdrp = FedDataRollingPoke(curPoke=total_left_pokes, windowSize=win_size, startTime=items[i-(win_size-1)].startTime, endTime=items[i].startTime, fedDate=items[i].fedDate, fedNumDay=fed_day, mouse=m)
         fdrp.save()
 
 def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num_p_day_f, cri_end_day_acc_m, cri_end_day_acc_f, cri_max_rol_avg30_m, cri_max_rol_avg30_f, cri_stab_yes_m, cri_stab_yes_f, cri_rt_thres_m, cri_rt_thres_f, cri_filter_test_type, cri_rol_poke_m, cri_rol_poke_f, cri_rol_poke_w_size ):
@@ -862,34 +853,37 @@ def del_mouse_data_fun(mouse_data):
     del_end_day = int(mouse_data['del_end_day'])
     #print(mouse_data)
 
+    # remove test type
     FedDataTestType.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
+    # remove rolling, byhour, byday
     FedDataRolling.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
     FedDataRollingPoke.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
     FedDataByHour.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
     FedDataByDay.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
-    # remove rolling, byhour, byday
-    # remove test type
+    # remove RT
+    FedDataByRT.objects.filter(mouse_id=del_mouse_id, fedNumDay__gte = del_start_day, fedNumDay__lte = del_end_day).delete()
     # remove raw
     FedDataRaw.objects.filter(mouse_id=del_mouse_id, actNumDay__gte = del_start_day, actNumDay__lte = del_end_day).delete()
 
     return
 
 # Given one mouse, one day, select all RT records and put into feddatabyrt
-def cal_rt_of_day(m, d, fedNumDay, onset_timestamp):
+def cal_rt_of_day(m, fed_day, onset_timestamp):
     # check test type, decide the experiment time
     cut_off_hr=8
-    qs_testtype = FedDataTestType.objects.filter(mouse=m, fedNumDay=fedNumDay)
+    qs_testtype = FedDataTestType.objects.filter(mouse=m, fedNumDay=fed_day)
     if qs_testtype:
         if qs_testtype[0].testType in ['QU', 'QU_X', 'E']:
             cut_off_hr=4
 
-    qs_hr_rt = FedDataRaw.objects.filter(mouse=m, actTimestamp__date=d).filter(actTimestamp__lte=(onset_timestamp+timedelta(hours=cut_off_hr))).exclude(retrievalTime=-1)
+    qs_hr_rt = FedDataRaw.objects.filter(mouse=m, actNumDay=fed_day).filter(actTimestamp__lte=(onset_timestamp+timedelta(hours=cut_off_hr))).exclude(retrievalTime=-1)
+
     rt_list = []
     rt_pel = 0
     rt_pc_pre = 0
     for i_q in range(len(qs_hr_rt)):
         # insert into rt table
-        feddayrt = FedDataByRT(actTimestamp=qs_hr_rt[i_q].actTimestamp, retrievalTime=qs_hr_rt[i_q].retrievalTime, pelletCount=qs_hr_rt[i_q].pelletCount, fedDate=d, fedNumDay=fedNumDay, mouse=m)
+        feddayrt = FedDataByRT(actTimestamp=qs_hr_rt[i_q].actTimestamp, retrievalTime=qs_hr_rt[i_q].retrievalTime, pelletCount=qs_hr_rt[i_q].pelletCount, fedDate=qs_hr_rt[i_q].actTimestamp.date(), fedNumDay=fed_day, mouse=m)
         feddayrt.save()
 
         # deal with nan value pellet retrieval
