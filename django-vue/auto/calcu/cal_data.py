@@ -483,16 +483,22 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                     # if thres != 0, recalculate the stat values
                     if feddata_threshold_rt[mouse_thres_index] != 0:
                         # re-calculate avg
-                        rt_list = cur_day_rt_raw.split(",")
-                        rt_np_arr = np.array(rt_list)
-                        rt_np_arr = rt_np_arr.astype(int)
-                        # filter out 
-                        rt_np_arr_filtered = rt_np_arr[ (rt_np_arr < feddata_threshold_rt[mouse_thres_index]) ] 
+                        if cur_day_rt_raw:
+                            rt_list = cur_day_rt_raw.split(",")
+                            rt_np_arr = np.array(rt_list)
+                            rt_np_arr = rt_np_arr.astype(int)
+                            # filter out 
+                            rt_np_arr_filtered = rt_np_arr[ (rt_np_arr < feddata_threshold_rt[mouse_thres_index]) ] 
 
-                        cur_day_rt_sem = round(np.std(rt_np_arr_filtered, ddof=1) / np.sqrt(np.size(rt_np_arr_filtered)), 4)
-                        cur_day_rt_avg = round(np.mean(rt_np_arr_filtered), 4)
-                        cur_day_rt_raw = ",".join(str(v) for v in rt_np_arr_filtered.tolist())
-                        cur_day_rt_pc = rt_np_arr_filtered.size 
+                            cur_day_rt_sem = round(np.std(rt_np_arr_filtered, ddof=1) / np.sqrt(np.size(rt_np_arr_filtered)), 4)
+                            cur_day_rt_avg = round(np.mean(rt_np_arr_filtered), 4)
+                            cur_day_rt_raw = ",".join(str(v) for v in rt_np_arr_filtered.tolist())
+                            cur_day_rt_pc = rt_np_arr_filtered.size 
+                        else:
+                            cur_day_rt_sem = 0
+                            cur_day_rt_avg = 0
+                            cur_day_rt_raw = ""
+                            cur_day_rt_pc = 0
 
                     # fill into thres_raw_rt
                     thres_raw_rt[0*pick_num_day_total+feddata_num_day_offset] = cur_day_rt_avg
