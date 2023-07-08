@@ -482,11 +482,15 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                             # filter out 
                             rt_np_arr_filtered = rt_np_arr[ (rt_np_arr < feddata_threshold_rt[mouse_thres_index]) ] 
 
-                            if rt_np_arr_filtered: 
-                                cur_day_rt_sem = round(np.std(rt_np_arr_filtered, ddof=1) / np.sqrt(np.size(rt_np_arr_filtered)), 4)
+                            if len(rt_np_arr_filtered) != 0: 
+                                if len(rt_np_arr_filtered) == 1:
+                                    cur_day_rt_sem = 0
+                                else:
+                                    cur_day_rt_sem = round(np.std(rt_np_arr_filtered, ddof=1) / np.sqrt(np.size(rt_np_arr_filtered)), 4)
                                 cur_day_rt_avg = round(np.mean(rt_np_arr_filtered), 4)
                                 cur_day_rt_raw = ",".join(str(v) for v in rt_np_arr_filtered.tolist())
                                 cur_day_rt_pc = rt_np_arr_filtered.size 
+
                             else:
                                 cur_day_rt_sem = 0
                                 cur_day_rt_avg = 0
