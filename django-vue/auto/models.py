@@ -34,7 +34,7 @@ class FedDataRaw(models.Model):
     actNumDay = models.IntegerField(default=0)
     deviceNumber = models.CharField(max_length=10)
     batteryVol = models.CharField(max_length=10)
-    motorTurns = models.CharField(max_length=5)
+    motorTurns = models.CharField(max_length=10)
     sessionType = models.CharField(max_length=20)
     event = models.IntegerField(default=0) # 1 for poke, 2 for pellet
     activePoke = models.IntegerField(default=0) # 1 for left, 2 for right
