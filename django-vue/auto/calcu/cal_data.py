@@ -527,14 +527,18 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                 # check left poke
                 feddata_cohort_rolling_poke_left = feddata_cohort_rolling_poke.filter(curPoke__gte = feddata_threshold_poke[mouse_thres_index])
                 if feddata_cohort_rolling_poke_left:
-                    thres_raw_poke[0*pick_num_day_total+feddata_num_day_offset] = ("%s" % (feddata_cohort_rolling_poke_left[0].endTime))
+                    duration = feddata_cohort_rolling_poke_left[0].endTime - feddata_cohort_rolling_poke[0].startTime
+                    total_seconds = int(duration.total_seconds())
+                    thres_raw_poke[0*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_left[0].endTime)
                 # check right poke
                 #(window - curPoke) >= thres (right)
                 #-curPoke >= thres - window
                 #curPoke <= window - thres
                 feddata_cohort_rolling_poke_right = feddata_cohort_rolling_poke.filter(curPoke__lte = (cri_rol_poke_w_size - feddata_threshold_poke[mouse_thres_index]) )
                 if feddata_cohort_rolling_poke_right:
-                    thres_raw_poke[1*pick_num_day_total+feddata_num_day_offset] = ("%s" % (feddata_cohort_rolling_poke_right[0].endTime)) 
+                    duration = feddata_cohort_rolling_poke_right[0].endTime - feddata_cohort_rolling_poke[0].startTime
+                    total_seconds = int(duration.total_seconds())
+                    thres_raw_poke[1*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_right[0].endTime)
 
                 # get final acq
                 thres_raw[ACQ_TABLE*pick_num_day_total+feddata_num_day_offset] = acq_table_count
