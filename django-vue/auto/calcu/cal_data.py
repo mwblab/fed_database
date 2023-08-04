@@ -8,6 +8,7 @@ from django.db.models import Count
 import numpy as np
 import copy
 import math
+import pytz
 
 NUM_P_DAY=0
 END_DAY_ACC=1
@@ -529,7 +530,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                 if feddata_cohort_rolling_poke_left:
                     duration = feddata_cohort_rolling_poke_left[0].endTime - feddata_cohort_rolling_poke[0].startTime
                     total_seconds = int(duration.total_seconds())
-                    thres_raw_poke[0*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_left[0].endTime)
+                    thres_raw_poke[0*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_left[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), feddata_cohort_rolling_poke_left[0].curPoke, cri_rol_poke_w_size - feddata_cohort_rolling_poke_left[0].curPoke )
                 # check right poke
                 #(window - curPoke) >= thres (right)
                 #-curPoke >= thres - window
@@ -538,7 +539,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                 if feddata_cohort_rolling_poke_right:
                     duration = feddata_cohort_rolling_poke_right[0].endTime - feddata_cohort_rolling_poke[0].startTime
                     total_seconds = int(duration.total_seconds())
-                    thres_raw_poke[1*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_right[0].endTime)
+                    thres_raw_poke[1*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_right[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), feddata_cohort_rolling_poke_right[0].curPoke, cri_rol_poke_w_size - feddata_cohort_rolling_poke_right[0].curPoke )
 
                 # get final acq
                 thres_raw[ACQ_TABLE*pick_num_day_total+feddata_num_day_offset] = acq_table_count
