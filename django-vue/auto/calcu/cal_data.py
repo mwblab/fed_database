@@ -261,7 +261,6 @@ def cal_rolling_window_cur_poke(m, fed_day, win_size):
             frame=RowRange(start=(0-win_size+1),end=0)
             )
         )
-
     for i in range(win_size-1, len(items)):
         total_left_pokes = items[i].total_left_pokes
         fdrp = FedDataRollingPoke(curPoke=total_left_pokes, windowSize=win_size, startTime=items[i-(win_size-1)].startTime, endTime=items[i].startTime, fedDate=items[i].fedDate, fedNumDay=fed_day, mouse=m)
@@ -525,21 +524,23 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                 if not feddata_cohort_rolling_poke:
                     cal_rolling_window_cur_poke(mouse,feddata_num_day_index,cri_rol_poke_w_size)
 
-                # check left poke
-                feddata_cohort_rolling_poke_left = feddata_cohort_rolling_poke.filter(curPoke__gte = feddata_threshold_poke[mouse_thres_index])
-                if feddata_cohort_rolling_poke_left:
-                    duration = feddata_cohort_rolling_poke_left[0].endTime - feddata_cohort_rolling_poke[0].startTime
-                    total_seconds = int(duration.total_seconds())
-                    thres_raw_poke[0*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_left[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), feddata_cohort_rolling_poke_left[0].curPoke, cri_rol_poke_w_size - feddata_cohort_rolling_poke_left[0].curPoke )
-                # check right poke
-                #(window - curPoke) >= thres (right)
-                #-curPoke >= thres - window
-                #curPoke <= window - thres
-                feddata_cohort_rolling_poke_right = feddata_cohort_rolling_poke.filter(curPoke__lte = (cri_rol_poke_w_size - feddata_threshold_poke[mouse_thres_index]) )
-                if feddata_cohort_rolling_poke_right:
-                    duration = feddata_cohort_rolling_poke_right[0].endTime - feddata_cohort_rolling_poke[0].startTime
-                    total_seconds = int(duration.total_seconds())
-                    thres_raw_poke[1*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_right[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), feddata_cohort_rolling_poke_right[0].curPoke, cri_rol_poke_w_size - feddata_cohort_rolling_poke_right[0].curPoke )
+                feddata_cohort_rolling_poke = FedDataRollingPoke.objects.filter(mouse=mouse, fedNumDay=feddata_num_day_index, windowSize=cri_rol_poke_w_size)
+                if feddata_cohort_rolling_poke:
+                    # check left poke
+                    feddata_cohort_rolling_poke_left = feddata_cohort_rolling_poke.filter(curPoke__gte = feddata_threshold_poke[mouse_thres_index])
+                    if feddata_cohort_rolling_poke_left:
+                        duration = feddata_cohort_rolling_poke_left[0].endTime - feddata_cohort_rolling_poke[0].startTime
+                        total_seconds = int(duration.total_seconds())
+                        thres_raw_poke[0*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_left[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), feddata_cohort_rolling_poke_left[0].curPoke, cri_rol_poke_w_size - feddata_cohort_rolling_poke_left[0].curPoke )
+                    # check right poke
+                    #(window - curPoke) >= thres (right)
+                    #-curPoke >= thres - window
+                    #curPoke <= window - thres
+                    feddata_cohort_rolling_poke_right = feddata_cohort_rolling_poke.filter(curPoke__lte = (cri_rol_poke_w_size - feddata_threshold_poke[mouse_thres_index]) )
+                    if feddata_cohort_rolling_poke_right:
+                        duration = feddata_cohort_rolling_poke_right[0].endTime - feddata_cohort_rolling_poke[0].startTime
+                        total_seconds = int(duration.total_seconds())
+                        thres_raw_poke[1*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_right[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), feddata_cohort_rolling_poke_right[0].curPoke, cri_rol_poke_w_size - feddata_cohort_rolling_poke_right[0].curPoke )
 
                 # get final acq
                 thres_raw[ACQ_TABLE*pick_num_day_total+feddata_num_day_offset] = acq_table_count
