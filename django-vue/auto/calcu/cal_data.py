@@ -217,15 +217,17 @@ def cal_rolling_avg_nonwindow_cur_poke(m, fed_day):
     if qs_poke and len(qs_poke) > 3: # at least 2 records
         rc_pre = -1
         for i in range(len(qs_poke)):
-            if i==0:
-                rc_pre = qs_poke[i].rightPokeCount
-                continue
             cur_poke = 1 # default = left poke
-            if qs_poke[i].rightPokeCount != rc_pre: #right count increase #TBD: need to verify poke with pellets
-                cur_poke = 0 # set 0 for right poke
-            # update rc_pre
-            rc_pre = qs_poke[i].rightPokeCount
             ts = qs_poke[i].actTimestamp
+            if i==0:
+                if qs_poke[i].rightPokeCount == 1:
+                    cur_poke = 0 # set 0 for right poke
+                rc_pre = qs_poke[i].rightPokeCount
+            else:
+                if qs_poke[i].rightPokeCount != rc_pre: #right count increase #TBD: need to verify poke with pellets => evert=1 has already filtered out them
+                    cur_poke = 0 # set 0 for right poke
+                # update rc_pre
+                rc_pre = qs_poke[i].rightPokeCount
 
             fdr = FedDataRollingPoke(curPoke=cur_poke, windowSize=1, startTime=ts, endTime=ts, fedDate=ts.date(), fedNumDay=fed_day, mouse=m)
             fdr.save()
@@ -531,7 +533,15 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                     if feddata_cohort_rolling_poke_left:
                         duration = feddata_cohort_rolling_poke_left[0].endTime - feddata_cohort_rolling_poke[0].startTime
                         total_seconds = int(duration.total_seconds())
-                        thres_raw_poke[0*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_left[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), feddata_cohort_rolling_poke_left[0].curPoke, cri_rol_poke_w_size - feddata_cohort_rolling_poke_left[0].curPoke )
+                        # select sum of left pokes
+                        feddata_cohort_rolling_poke_left_agg = FedDataRollingPoke.objects.filter(mouse=mouse, fedNumDay=feddata_num_day_index, windowSize=1, endTime__lte = feddata_cohort_rolling_poke_left[0].endTime).aggregate(left_pokes = Sum("curPoke"), total_pokes = Count("curPoke"))
+                        if feddata_cohort_rolling_poke_left_agg:
+                            left_pokes = feddata_cohort_rolling_poke_left_agg['left_pokes']  
+                            total_pokes = feddata_cohort_rolling_poke_left_agg['total_pokes']
+                            thres_raw_poke[0*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_left[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), left_pokes -1, total_pokes - left_pokes -1 )
+                        else:
+                            raise Exception("feddata_cohort_rolling_poke_left_agg can not be null")
+
                     # check right poke
                     #(window - curPoke) >= thres (right)
                     #-curPoke >= thres - window
@@ -540,7 +550,14 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                     if feddata_cohort_rolling_poke_right:
                         duration = feddata_cohort_rolling_poke_right[0].endTime - feddata_cohort_rolling_poke[0].startTime
                         total_seconds = int(duration.total_seconds())
-                        thres_raw_poke[1*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_right[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), feddata_cohort_rolling_poke_right[0].curPoke, cri_rol_poke_w_size - feddata_cohort_rolling_poke_right[0].curPoke )
+                        # select sum of left pokes
+                        feddata_cohort_rolling_poke_right_agg = FedDataRollingPoke.objects.filter(mouse=mouse, fedNumDay=feddata_num_day_index, windowSize=1, endTime__lte = feddata_cohort_rolling_poke_right[0].endTime).aggregate(left_pokes = Sum("curPoke"), total_pokes = Count("curPoke"))
+                        if feddata_cohort_rolling_poke_right_agg:
+                            left_pokes = feddata_cohort_rolling_poke_right_agg['left_pokes'] 
+                            total_pokes = feddata_cohort_rolling_poke_right_agg['total_pokes'] 
+                            thres_raw_poke[1*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_right[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), left_pokes -1, total_pokes - left_pokes -1 )
+                        else:
+                            raise Exception("feddata_cohort_rolling_poke_right_agg can not be null")
 
                 # get final acq
                 thres_raw[ACQ_TABLE*pick_num_day_total+feddata_num_day_offset] = acq_table_count
