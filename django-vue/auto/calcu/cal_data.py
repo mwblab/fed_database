@@ -264,6 +264,8 @@ def cal_rolling_window_cur_poke(m, fed_day, win_size):
             )
         )
     for i in range(win_size-1, len(items)):
+        if i == win_size-1: #skip the first poke (implement in excel)
+            continue
         total_left_pokes = items[i].total_left_pokes
         fdrp = FedDataRollingPoke(curPoke=total_left_pokes, windowSize=win_size, startTime=items[i-(win_size-1)].startTime, endTime=items[i].startTime, fedDate=items[i].fedDate, fedNumDay=fed_day, mouse=m)
         fdrp.save()
