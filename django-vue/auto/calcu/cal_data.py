@@ -108,17 +108,35 @@ def cal_hr_day(m, fed_day):
     total_p = 0
     for hr in range(8):
         qs_hr = qs.filter(actTimestamp__lte=(onset_timestamp+timedelta(hours=hr+1)), actTimestamp__gt=(onset_timestamp+timedelta(hours=hr)))
-        
-        qs_hr_poke_left = qs_hr.filter(activePoke = 1, event = 1 )
-        qs_hr_poke_right = qs_hr.filter(activePoke = 2, event = 1 )
+        # select pokes 
+        qs_hr_poke = qs_hr.filter(event = 1)
+        qs_hr_poke_left = 0
+        qs_hr_poke_right = 0
+        if qs_hr_poke and len(qs_hr_poke) > 1:
+            rc_pre = -1
+            for i in range(len(qs_hr_poke)):
+                if i==0:
+                    if qs_hr_poke[i].rightPokeCount == 1:
+                        qs_hr_poke_right += 1
+                    else:
+                        qs_hr_poke_left += 1
+                else:
+                    if qs_hr_poke[i].rightPokeCount != rc_pre:
+                        qs_hr_poke_right += 1
+                    else:
+                        qs_hr_poke_left += 1
+                rc_pre = qs_hr_poke[i].rightPokeCount
+
+        # select pellects
         qs_hr_pc = qs_hr.filter(event = 2 )
-        cur_l = len(qs_hr_poke_left)
-        cur_r = len(qs_hr_poke_right)
+
+        cur_l = qs_hr_poke_left
+        cur_r = qs_hr_poke_right
         cur_p = len(qs_hr_pc)
         total_l += cur_l
         total_r += cur_r
         total_p += cur_p
-        
+
         # count poke acc
         poke_acc=0;
         if cur_l+cur_r == 0:
@@ -149,7 +167,6 @@ def cal_hr_day(m, fed_day):
 
             fedday = FedDataByDay(rtAvg=rt_avg, rtSem=rt_sem, rtPelletCount=rt_pel, rtRaw=rt_raw, leftPokeCount=total_l, rightPokeCount=total_r, pelletCount=total_p, activePoke=active_poke, pokeAcc=poke_acc, fedDate=onset_timestamp.date(), fedNumDay=fed_day, mouse=m)
             fedday.save()
-
 
 
 # cal rolling avg of poke_acc
@@ -214,7 +231,7 @@ def cal_rolling_avg_nonwindow_cur_poke(m, fed_day):
     onset_time = qs[0].actTimestamp
     qs_poke = FedDataRaw.objects.filter(mouse=m, actNumDay=fed_day, event=1, actTimestamp__gte=onset_time) 
 
-    if qs_poke and len(qs_poke) > 3: # at least 2 records
+    if qs_poke and len(qs_poke) > 3: # at least 2 records # 3 should be 1?
         rc_pre = -1
         for i in range(len(qs_poke)):
             cur_poke = 1 # default = left poke
