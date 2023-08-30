@@ -95,9 +95,10 @@ def cal_hr_day(m, fed_day):
     active_poke = qs[0].activePoke  
     if len(qs) < 2:
         print("WARNING: qs < 2")
-        onset_timestamp = qs[0].actTimestamp # deal with only 1 transaction
-    else:
-        onset_timestamp = qs[1].actTimestamp # onset from the second transaction
+#        onset_timestamp = qs[0].actTimestamp # deal with only 1 transaction
+#    else:
+#        onset_timestamp = qs[1].actTimestamp # onset from the second transaction
+    onset_timestamp = qs[0].actTimestamp # onset from the first transaction
 
     # for retrieval time
     rt_avg, rt_sem, rt_pel, rt_raw = cal_rt_of_day(m, fed_day, onset_timestamp)
@@ -106,20 +107,18 @@ def cal_hr_day(m, fed_day):
     total_l = 0
     total_r = 0
     total_p = 0
+    rc_pre = -1
     for hr in range(8):
-        qs_hr = qs.filter(actTimestamp__lte=(onset_timestamp+timedelta(hours=hr+1)), actTimestamp__gt=(onset_timestamp+timedelta(hours=hr)))
+        qs_hr = qs.filter(actTimestamp__lt=(onset_timestamp+timedelta(hours=hr+1)), actTimestamp__gte=(onset_timestamp+timedelta(hours=hr)))
         # select pokes 
         qs_hr_poke = qs_hr.filter(event = 1)
         qs_hr_poke_left = 0
         qs_hr_poke_right = 0
         if qs_hr_poke and len(qs_hr_poke) > 1:
-            rc_pre = -1
-            for i in range(len(qs_hr_poke)):
-                if i==0:
-                    if qs_hr_poke[i].rightPokeCount == 1:
-                        qs_hr_poke_right += 1
-                    else:
-                        qs_hr_poke_left += 1
+            for i in range(len(qs_hr_poke)): #i=1 just for hr=0
+                if i==0 and hr==0:
+                    qs_hr_poke_right = qs_hr_poke[i].rightPokeCount
+                    qs_hr_poke_left = qs_hr_poke[i].leftPokeCount
                 else:
                     if qs_hr_poke[i].rightPokeCount != rc_pre:
                         qs_hr_poke_right += 1
