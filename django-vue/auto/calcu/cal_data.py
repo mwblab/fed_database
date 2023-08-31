@@ -107,7 +107,6 @@ def cal_hr_day(m, fed_day):
     # for day and hr 
     total_l = 0
     total_r = 0
-    total_p = 0
     rc_pre = -1
     for hr in range(8):
         qs_hr = qs.filter(actTimestamp__lt=(onset_timestamp+timedelta(hours=hr+1)), actTimestamp__gte=(onset_timestamp+timedelta(hours=hr)))
@@ -128,14 +127,14 @@ def cal_hr_day(m, fed_day):
                 rc_pre = qs_hr_poke[i].rightPokeCount
 
         # select pellects
-        qs_hr_pc = qs_hr.filter(event = 2 )
+        #qs_hr_pc = qs_hr.filter(event = 2 ) - wrong, did not consider the missing (bug) pellets
+        #cur_p = len(qs_hr_pc)
+        cur_p=0
 
         cur_l = qs_hr_poke_left
         cur_r = qs_hr_poke_right
-        cur_p = len(qs_hr_pc)
         total_l += cur_l
         total_r += cur_r
-        total_p += cur_p
 
         # count poke acc
         poke_acc=0;
@@ -165,7 +164,7 @@ def cal_hr_day(m, fed_day):
             else:
                 raise Exception("Invalid active_poke code.") 
 
-            fedday = FedDataByDay(rtAvg=rt_avg, rtSem=rt_sem, rtPelletCount=rt_pel, rtRaw=rt_raw, leftPokeCount=total_l, rightPokeCount=total_r, pelletCount=total_p, activePoke=active_poke, pokeAcc=poke_acc, fedDate=onset_timestamp.date(), fedNumDay=fed_day, mouse=m)
+            fedday = FedDataByDay(rtAvg=rt_avg, rtSem=rt_sem, rtPelletCount=rt_pel, rtRaw=rt_raw, leftPokeCount=total_l, rightPokeCount=total_r, pelletCount=rt_pel, activePoke=active_poke, pokeAcc=poke_acc, fedDate=onset_timestamp.date(), fedNumDay=fed_day, mouse=m)
             fedday.save()
 
 
