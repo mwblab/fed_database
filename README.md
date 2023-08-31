@@ -55,7 +55,12 @@ https://django-extensions.readthedocs.io/en/latest/runscript.html
 
 ## access db web
 
-http://neurallab:8080/?server=db&username=automiceuser&db=automicedb
+http://128.173.224.170:8080/
+Server: 0.0.0.0
+Username: automiceuser
+Database: automicedb
+
+20230830 update: remove adminer docker version and run the adminer on nginx server
 
 # Dev issue
 
@@ -108,5 +113,18 @@ https://jasonwatmore.com/post/2022/06/09/vue-fetch-http-put-request-examples
 
 https://blog.logrocket.com/how-to-build-vue-js-app-django-rest-framework/#setting-up-vuejs-client-app
 
+
+# restart docker
+
+sudo systemctl restart snap.docker.dockerd.service
+
+
+
+# install adminer naive version
+
+https://www.vultr.com/docs/how-to-install-adminer-on-ubuntu-20-04/
+
+php8.1-fpm
+https://portal.databasemart.com/kb/a2136/how-to-install-php-8_1-for-nginx-on-ubuntu-20_04.aspx
 
 
