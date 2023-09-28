@@ -566,7 +566,11 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                         if feddata_cohort_rolling_poke_left_agg:
                             left_pokes = feddata_cohort_rolling_poke_left_agg['left_pokes']  
                             total_pokes = feddata_cohort_rolling_poke_left_agg['total_pokes']
-                            thres_raw_poke[0*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_left[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), left_pokes -1, total_pokes - left_pokes -1 )
+                            # get temp right pokes (avoid -1 issue)
+                            temp_right_pokes = total_pokes - left_pokes -1
+                            if temp_right_pokes < 0:
+                                temp_right_pokes = 0
+                            thres_raw_poke[0*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_left[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), left_pokes -1, temp_right_pokes )
                         else:
                             raise Exception("feddata_cohort_rolling_poke_left_agg can not be null")
 
@@ -583,7 +587,11 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                         if feddata_cohort_rolling_poke_right_agg:
                             left_pokes = feddata_cohort_rolling_poke_right_agg['left_pokes'] 
                             total_pokes = feddata_cohort_rolling_poke_right_agg['total_pokes'] 
-                            thres_raw_poke[1*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_right[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), left_pokes -1, total_pokes - left_pokes -1 )
+                            # get temp left pokes (avoid -1 issue)
+                            temp_left_pokes = left_pokes -1
+                            if temp_left_pokes < 0:
+                                temp_left_pokes = 0
+                            thres_raw_poke[1*pick_num_day_total+feddata_num_day_offset] = "%02d:%02d:%02d,%s,%d,%d" % (total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60, feddata_cohort_rolling_poke_right[0].endTime.astimezone(pytz.timezone('Etc/GMT+4')), temp_left_pokes, total_pokes - left_pokes -1 )
                         else:
                             raise Exception("feddata_cohort_rolling_poke_right_agg can not be null")
 
