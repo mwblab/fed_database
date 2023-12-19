@@ -1,7 +1,7 @@
 # FED Database
 
 ## Overview
-FED Database is an data management pipeline for FED data combining the power of Python/Django for backend operations with the flexibility of Vue.js for a responsive frontend experience. This document provides the setup steps for both Django and Vue.js to get your FED Database environment up and running.
+The FED Database is a data management pipeline for FED data, combining the power of Python/Django for backend operations with the flexibility of Vue.js for a responsive frontend experience. This document outlines the setup steps for both Django and Vue.js to get your FED Database environment up and running
 
 ## Prerequisites
 Before you begin, ensure you have the following installed:
@@ -50,33 +50,25 @@ Before you begin, ensure you have the following installed:
    - `source django-vue/bin/activate`
 
 3. **Initialize Database**
-
-`cd django-vue`
-
-`python manage.py makemigrations`
-
-`python manage.py migrate`
+   - `cd django-vue`
+   - `python manage.py makemigrations`
+   - `python manage.py migrate`
 
 4. **Run the Backend Server**
-
-`python3 manage.py runserver 0.0.0.0:3000`
-
+   - `python3 manage.py runserver 0.0.0.0:3000`
 
 ### Vue.js Frontend Setup
 
 1. **Navigate to the Frontend Directory**
-
-`cd frontend`
+   - `cd frontend`
 
 2. **Install Node Modules**
-
-`npm install` 
+   - `npm install` 
 
 3. **Run the Vue.js Frontend Server**
-
-edit port and host IP in config/index.js file
-
-`npm run dev`
+   - Edit port and host IP in config/index.js file.
+   - run server
+   - `npm run dev`
 
 ## Usage
 
