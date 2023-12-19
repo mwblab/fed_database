@@ -1,7 +1,7 @@
 # FED Database
 
 ## Overview
-FED Database is an calculation pipeline for FED data management combining the power of Python/Django for backend operations with the flexibility of Vue.js for a responsive frontend experience. This document provides the setup steps for both Django and Vue.js to get your FED Database environment up and running.
+FED Database is an data management pipeline for FED data combining the power of Python/Django for backend operations with the flexibility of Vue.js for a responsive frontend experience. This document provides the setup steps for both Django and Vue.js to get your FED Database environment up and running.
 
 ## Prerequisites
 Before you begin, ensure you have the following installed:
@@ -43,14 +43,11 @@ Before you begin, ensure you have the following installed:
 ### Django Backend Setup
 
 1. **Clone the Repository**
-
-`git clone https://github.com/mwblab/fed_database.git`
-
-`cd fed_database`
+   - `git clone https://github.com/mwblab/fed_database.git`
+   - `cd fed_database`
 
 2. **Set Up a Virtual Environment** 
-
-`source django-vue/bin/activate`
+   - `source django-vue/bin/activate`
 
 3. **Initialize Database**
 
