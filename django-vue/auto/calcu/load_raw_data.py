@@ -153,6 +153,12 @@ def import_fed_csv(csv_path, ret_mouse):
             et = 2
         elif r["Event"] == "LeftWithPellet" or r["Event"] == "RightWithPellet": # new event, no use atm
             et = 3
+        elif r["Event"] == "LeftDuringDispense" or r["Event"] == "RightDuringDispense": # new event, no use atm
+            et = 4
+        elif r["Event"] == "LeftShort" or r["Event"] == "RightShort": # new event, no use atm
+            et = 5
+        elif r["Event"] == "LeftinTimeout" or r["Event"] == "RightinTimeout": # new event, no use atm
+            et = 6
         else:
             raise Exception("Event value is not matched: '%s'" % r["Event"])
 
@@ -165,6 +171,18 @@ def import_fed_csv(csv_path, ret_mouse):
             ap = -1
         elif r["Active_Poke"] == "Right" and et == 3: # poke with pellet, new event
             ap = -2
+        elif r["Active_Poke"] == "Left" and et == 4: # new event
+            ap = -3
+        elif r["Active_Poke"] == "Right" and et == 4: # new event
+            ap = -4
+        elif r["Active_Poke"] == "Left" and et == 5: # new event
+            ap = -5
+        elif r["Active_Poke"] == "Right" and et == 5: # new event
+            ap = -6
+        elif r["Active_Poke"] == "Left" and et == 6: # new event
+            ap = -7
+        elif r["Active_Poke"] == "Right" and et == 6: # new event
+            ap = -8
         else:
             raise Exception("Active_Poke value is not matched: '%s'" % r["Active_Poke"])
 
