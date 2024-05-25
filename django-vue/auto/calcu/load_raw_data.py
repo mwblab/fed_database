@@ -151,38 +151,46 @@ def import_fed_csv(csv_path, ret_mouse):
             et = 1
         elif r["Event"] == "Pellet":
             et = 2
-        elif r["Event"] == "LeftWithPellet" or r["Event"] == "RightWithPellet": # new event, no use atm
+        elif r["Event"] == "LeftWithPellet": # left with pellet event
             et = 3
-        elif r["Event"] == "LeftDuringDispense" or r["Event"] == "RightDuringDispense": # new event, no use atm
+        elif r["Event"] == "RightWithPellet": # right with pellet event
+            et = -3
+        elif r["Event"] == "LeftDuringDispense": # left during dispense event
             et = 4
-        elif r["Event"] == "LeftShort" or r["Event"] == "RightShort": # new event, no use atm
+        elif r["Event"] == "RightDuringDispense": # right during dispense event
+            et = -4
+        elif r["Event"] == "LeftShort": # new event, no use atm
             et = 5
-        elif r["Event"] == "LeftinTimeout" or r["Event"] == "RightinTimeout": # new event, no use atm
+        elif r["Event"] == "RightShort": # new event, no use atm
+            et = -5
+        elif r["Event"] == "LeftinTimeout": # new event, no use atm
             et = 6
+        elif r["Event"] == "RightinTimeout": # new event, no use atm
+            et = -6
         else:
             raise Exception("Event value is not matched: '%s'" % r["Event"])
 
         ap = 0
-        if r["Active_Poke"] == "Left" and et < 3: # actual poke
+        if r["Active_Poke"] == "Left" and ( et == 1 or et == 2 ): # actual poke
             ap = 1
-        elif r["Active_Poke"] == "Right" and et < 3: # actual poke
+        elif r["Active_Poke"] == "Right" and ( et == 1 or et == 2): # actual poke
             ap = 2
-        elif r["Active_Poke"] == "Left" and et == 3: # poke with pellet, new event
+        elif r["Active_Poke"] == "Left" and (et == 3 or et == -3): # poke with pellet, new event
             ap = -1
-        elif r["Active_Poke"] == "Right" and et == 3: # poke with pellet, new event
+        elif r["Active_Poke"] == "Right" and (et == 3 or et == -3): # poke with pellet, new event
             ap = -2
-        elif r["Active_Poke"] == "Left" and et == 4: # new event
-            ap = -3
-        elif r["Active_Poke"] == "Right" and et == 4: # new event
-            ap = -4
-        elif r["Active_Poke"] == "Left" and et == 5: # new event
-            ap = -5
-        elif r["Active_Poke"] == "Right" and et == 5: # new event
-            ap = -6
-        elif r["Active_Poke"] == "Left" and et == 6: # new event
-            ap = -7
-        elif r["Active_Poke"] == "Right" and et == 6: # new event
-            ap = -8
+        elif r["Active_Poke"] == "Left" and (et == 4 or et == -4): # new event
+            ap = -1
+        elif r["Active_Poke"] == "Right" and (et == 4 or et == -4): # new event
+            ap = -2
+        elif r["Active_Poke"] == "Left" and (et == 5 or et == -5): # new event
+            ap = -1
+        elif r["Active_Poke"] == "Right" and (et == 5 or et == -5): # new event
+            ap = -2
+        elif r["Active_Poke"] == "Left" and (et == 6 or et == -6): # new event
+            ap = -1
+        elif r["Active_Poke"] == "Right" and (et == 6 or et == -6): # new event
+            ap = -2
         else:
             raise Exception("Active_Poke value is not matched: '%s'" % r["Active_Poke"])
 

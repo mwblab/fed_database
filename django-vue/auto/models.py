@@ -47,6 +47,11 @@ class FedDataRaw(models.Model):
 class FedDataByHour(models.Model):
     leftPokeCount = models.IntegerField(default=0)
     rightPokeCount = models.IntegerField(default=0)
+    leftWithPelletCount = models.IntegerField(default=0)
+    rightWithPelletCount = models.IntegerField(default=0)
+    leftDuringDispenseCount = models.IntegerField(default=0)
+    rightDuringDispenseCount = models.IntegerField(default=0)
+
     pelletCount = models.IntegerField(default=0)
     activePoke = models.IntegerField(default=0) # 1 for left, 2 for right
     pokeAcc = models.DecimalField(default=0.0, max_digits=7, decimal_places=6)
@@ -60,6 +65,11 @@ class FedDataByHour(models.Model):
 class FedDataByDay(models.Model):
     leftPokeCount = models.IntegerField(default=0)
     rightPokeCount = models.IntegerField(default=0)
+    leftWithPelletCount = models.IntegerField(default=0)
+    rightWithPelletCount = models.IntegerField(default=0)
+    leftDuringDispenseCount = models.IntegerField(default=0)
+    rightDuringDispenseCount = models.IntegerField(default=0)
+
     pelletCount = models.IntegerField(default=0)
     activePoke = models.IntegerField(default=0) # 1 for left, 2 for right
     pokeAcc = models.DecimalField(default=0.0, max_digits=7, decimal_places=6)
