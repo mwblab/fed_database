@@ -23,7 +23,7 @@
           :accept="'.csv'"
           :maxSize="'500MB'"
           :maxFiles="100"
-          :helpText="'Choose fed raw csv files. only one day is allowed.'"
+          :helpText="'Choose fed raw csv files. '"
           :errorText="{
             type: 'Invalid file type. Only csv Allowed',
             size: 'Files should not exceed 500MB in size',
@@ -479,6 +479,8 @@ export default {
         utils.book_append_sheet(wb, ws2, 'All_Data2')
         const ws3 = utils.json_to_sheet(this.acq_table_tabs[0][2])
         utils.book_append_sheet(wb, ws3, 'All_Data3')
+        const ws4 = utils.json_to_sheet(this.acq_table_tabs[0][3])
+        utils.book_append_sheet(wb, ws4, 'All_Data4')
 
         const ws7 = utils.json_to_sheet(this.acq_table_tabs[2][0])
         utils.book_append_sheet(wb, ws7, 'Metadata')
