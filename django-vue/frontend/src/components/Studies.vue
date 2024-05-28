@@ -75,6 +75,8 @@
         </div>
         <div v-else>
             <b-button pill variant="primary" :disabled=cal_running @click="calData()">Calculate</b-button>
+            <br />
+            * Calculate can only be run by one person. Running Calculate in parallel will cause incorrect results.
         </div>
         <br>
         <!--<p>Step 3. download acquisition csv of one cohort</p>!-->
