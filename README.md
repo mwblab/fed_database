@@ -1,130 +1,92 @@
-# Fed Database
-
-
-## run dev RESTful server
-
-`python manage.py runserver 0.0.0.0:3000`
-
-available port: 3000, 5000
-3000 for RESTful, 5000 for vue
-
-## run vue dev server
-
-`cd frontend`
-
-`npm run dev`
-
-run on port 5000
-
-you can update host, port in frontend/config/index.js 
-
-access website
-
-`http://128.173.224.170:5000/#/`
-
-## django dev
-
-`cd django-vue`
-
-`source ./bin/activate`
-
-`python manage.py migrate`
-
-`python manage.py runserver`
-
-## create migration
-
-if add table, update auto/models.py
-
-`python manage.py makemigrations`
-
-`python manage.py migrate`
-
-## create data migration
-
-# https://docs.djangoproject.com/en/4.1/howto/initial-data/
-
-`python manage.py makemigrations --empty auto`
-
-
-## reset tables
-
-`python ../manage.py runscript reset_data`
-
-https://django-extensions.readthedocs.io/en/latest/runscript.html
-
-## access db web
-
-http://128.173.224.170:8080/
-Server: 0.0.0.0
-Username: automiceuser
-Database: automicedb
-
-20230830 update: remove adminer docker version and run the adminer on nginx server
-
-# Dev issue
-
-## Cannot read properties of undefined: 
-
-https://github.com/Belphemur/vue-json-csv/issues/170
-use vue-json-csv 1.2.12
-
-
-## date picker
-
-https://www.npmjs.com/package/vue2-datepicker
-
-
-## bootstrap vue
-
-https://bootstrap-vue.org/docs
-
-## import python code
-
-https://iq-inc.com/importerror-attempted-relative-import/
-
-## async
-
-https://javascript.info/async-await
-
-https://www.letswrite.tw/promise-async-await/
-
-## file uploader
-
-https://medium.com/js-dojo/how-to-build-a-file-manager-storage-web-app-with-django-rest-framework-and-vue-js-e89a83318e9c
-
-https://safrazik.github.io/vue-file-agent/
-
-https://github.com/safrazik/vue-file-agent#advanced-usage
-
-## csv downloader
-
-https://belphemur.github.io/vue-json-csv/
-
-https://www.npmjs.com/package/vue-json-csv
-
-## vue awesome
-
-https://github.com/vuejs/awesome-vue#csv
-
-## fetch, sample
-
-https://jasonwatmore.com/post/2022/06/09/vue-fetch-http-put-request-examples
-
-https://blog.logrocket.com/how-to-build-vue-js-app-django-rest-framework/#setting-up-vuejs-client-app
-
-
-# restart docker
-
-sudo systemctl restart snap.docker.dockerd.service
-
-
-
-# install adminer naive version
-
-https://www.vultr.com/docs/how-to-install-adminer-on-ubuntu-20-04/
-
-php8.1-fpm
-https://portal.databasemart.com/kb/a2136/how-to-install-php-8_1-for-nginx-on-ubuntu-20_04.aspx
+# FED Database
+
+## Overview
+The FED Database is a data management pipeline for FED data, combining the power of Python/Django for backend operations with the flexibility of Vue.js for a responsive frontend experience. This document outlines the setup steps for both Django and Vue.js to get your FED Database environment up and running
+
+## Prerequisites
+Before you begin, ensure you have the following installed:
+- Python (3.8 or later)
+- Node.js (14.x or later)
+- npm (6.x or later)
+- MySQL or MariaDB
+- Git
+
+## Setup
+
+### MySQL/MariaDB Database Setup
+
+1. **Install MySQL or MariaDB**
+   - Follow the installation instructions for your specific operating system.
+   - [MySQL Download](https://dev.mysql.com/downloads/mysql/)
+   - [MariaDB Download](https://mariadb.org/download/)
+
+2. **Create a New Database**
+   - Open your database management tool (like MySQL Workbench or phpMyAdmin).
+   - Create a new database for the project, e.g., `fed_database`.
+
+3. **Configure Database Settings in Django**
+   - Navigate to your Django project's `settings.py`.
+   - Update the `DATABASES` setting to use your MySQL/MariaDB database.
+     ```python
+     DATABASES = {
+         'default': {
+             'ENGINE': 'django.db.backends.mysql',
+             'NAME': 'fed_database',
+             'USER': 'your_database_user',
+             'PASSWORD': 'your_database_password',
+             'HOST': 'localhost',
+             'PORT': '3306',
+         }
+     }
+     ```
+
+### Django Backend Setup
+
+1. **Clone the Repository**
+   - `git clone https://github.com/mwblab/fed_database.git`
+   - `cd fed_database`
+
+2. **Set Up a Virtual Environment** 
+   - `bash install.sh`
+   - `source django-vue/bin/activate`
+
+3. **Install django dependency** 
+   - install pip from https://pip.pypa.io/en/stable/installation/ 
+   - `python -m pip install django;`
+   - `pip install django-extensions`
+   - `pip install djangorestframework`
+   - `pip install pymysql`
+   - `pip install django-cors-headers`
+   - `pip install mysqlclient`
+
+4. **Initialize Database**
+   - `cd django-vue`
+   - `python manage.py makemigrations`
+   - `python manage.py migrate`
+
+5. **Run the Backend Server**
+   - `python3 manage.py runserver 0.0.0.0:3000`
+
+### Vue.js Frontend Setup
+
+1. **Navigate to the Frontend Directory**
+   - `cd frontend`
+
+2. **Install Node Modules**
+   - `npm install webpack-dev-server`
+   - `npm install --save xlsx`
+   - `npm install` 
+
+3. **Run the Vue.js Frontend Server**
+   - Edit port and host IP in config/index.js file.
+   - run server
+   - `npm run dev`
+
+## Usage
+
+To use FED Database, navigate to `http://host_IP:port` in your web browser.
+
+## Contributing
+Contributions to FED Database are welcome! 
 
 

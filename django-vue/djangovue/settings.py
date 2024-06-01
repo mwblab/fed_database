@@ -86,9 +86,9 @@ WSGI_APPLICATION = 'djangovue.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'automicedb',
-        'USER': 'automiceuser',
-        'PASSWORD': 'jekXU!Yn4Q5TQ6tL',
+        'NAME': 'DATABASE_NAME',
+        'USER': 'DATABASE_USER',
+        'PASSWORD': 'DATABASE_PWD',
         'HOST': '127.0.0.1',   # Or an IP Address that your DB is hosted on
         'PORT': '3306',
     }
