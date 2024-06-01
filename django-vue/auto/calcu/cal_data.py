@@ -21,6 +21,8 @@ RT_PC=7
 RT_RAW=8
 ROLLING_POKE=9
 LR_POKE_COUNT=10
+LR_WITH_PELLETS=11
+LR_DISPENSE=12
 MALE=0
 FEMALE=1
 DEBUG=1
@@ -89,6 +91,7 @@ def get_day_set(m):
 
     return(trans_from_raw_set-trans_from_caled_day_set)
 
+# calculate per hr, day information
 def cal_hr_day(m, fed_day):
     print(fed_day)
     qs = FedDataRaw.objects.filter(mouse=m, actNumDay=fed_day)
@@ -107,9 +110,14 @@ def cal_hr_day(m, fed_day):
     # for day and hr 
     total_l = 0
     total_r = 0
+    total_l_with_pellets = 0
+    total_r_with_pellets = 0
+    total_l_dispense = 0
+    total_r_dispense = 0
     rc_pre = -1
     for hr in range(8):
         qs_hr = qs.filter(actTimestamp__lt=(onset_timestamp+timedelta(hours=hr+1)), actTimestamp__gte=(onset_timestamp+timedelta(hours=hr)))
+
         # select pokes 
         qs_hr_poke = qs_hr.filter(event = 1)
         qs_hr_poke_left = 0
@@ -126,6 +134,14 @@ def cal_hr_day(m, fed_day):
                         qs_hr_poke_left += 1
                 rc_pre = qs_hr_poke[i].rightPokeCount
 
+        # select with pellets
+        qs_hr_with_pellets_left = len( qs_hr.filter(event = 3) )
+        qs_hr_with_pellets_right = len( qs_hr.filter(event = -3) )
+
+        # select during dispense
+        qs_hr_dispense_left = len( qs_hr.filter(event = 4) )
+        qs_hr_dispense_right = len( qs_hr.filter(event = -4) )
+
         # select pellects
         #qs_hr_pc = qs_hr.filter(event = 2 ) - wrong, did not consider the missing (bug) pellets
         #cur_p = len(qs_hr_pc)
@@ -133,8 +149,14 @@ def cal_hr_day(m, fed_day):
 
         cur_l = qs_hr_poke_left
         cur_r = qs_hr_poke_right
+        # sum up
         total_l += cur_l
         total_r += cur_r
+        total_l_with_pellets += qs_hr_with_pellets_left
+        total_r_with_pellets += qs_hr_with_pellets_right
+        total_l_dispense += qs_hr_dispense_left
+        total_r_dispense += qs_hr_dispense_right
+
 
         # count poke acc
         poke_acc=0;
@@ -149,7 +171,7 @@ def cal_hr_day(m, fed_day):
 
         print("before insert pokeAcc=%f cur_l %d curl_r %d p %d" % (poke_acc, cur_l, cur_r, cur_p))
         # insert into db
-        fedhr = FedDataByHour(leftPokeCount=cur_l, rightPokeCount=cur_r, pelletCount=cur_p, activePoke=active_poke, pokeAcc=poke_acc, startTime=onset_timestamp+timedelta(hours=hr), endTime=onset_timestamp+timedelta(hours=hr+1), numHour=hr+1, fedDate=onset_timestamp.date(), fedNumDay=fed_day, mouse=m)
+        fedhr = FedDataByHour(leftPokeCount=cur_l, rightPokeCount=cur_r, leftWithPelletCount=qs_hr_with_pellets_left, rightWithPelletCount=qs_hr_with_pellets_right, leftDuringDispenseCount=qs_hr_dispense_left, rightDuringDispenseCount=qs_hr_dispense_right, pelletCount=cur_p, activePoke=active_poke, pokeAcc=poke_acc, startTime=onset_timestamp+timedelta(hours=hr), endTime=onset_timestamp+timedelta(hours=hr+1), numHour=hr+1, fedDate=onset_timestamp.date(), fedNumDay=fed_day, mouse=m)
         fedhr.save()
 
         # insert into day table
@@ -164,7 +186,7 @@ def cal_hr_day(m, fed_day):
             else:
                 raise Exception("Invalid active_poke code.") 
 
-            fedday = FedDataByDay(rtAvg=rt_avg, rtSem=rt_sem, rtPelletCount=rt_pel, rtRaw=rt_raw, leftPokeCount=total_l, rightPokeCount=total_r, pelletCount=rt_pel, activePoke=active_poke, pokeAcc=poke_acc, fedDate=onset_timestamp.date(), fedNumDay=fed_day, mouse=m)
+            fedday = FedDataByDay(rtAvg=rt_avg, rtSem=rt_sem, rtPelletCount=rt_pel, rtRaw=rt_raw, leftPokeCount=total_l, rightPokeCount=total_r, leftWithPelletCount=total_l_with_pellets, rightWithPelletCount=total_r_with_pellets, leftDuringDispenseCount=total_l_dispense, rightDuringDispenseCount=total_r_dispense, pelletCount=rt_pel, activePoke=active_poke, pokeAcc=poke_acc, fedDate=onset_timestamp.date(), fedNumDay=fed_day, mouse=m)
             fedday.save()
 
 
@@ -334,6 +356,9 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
     feddata_datatype_rt = ['rt_avg','rt_sem','rt_pellet_count','rt_raw']
 
     feddata_datatype_lr_poke = ['left_pokes_per_day','right_pokes_per_day']
+    # add with pellets and during dispense datatypes
+    feddata_datatype_lr_with_pellets = ['left_with_pellets_per_day','right_with_pellets_per_day']
+    feddata_datatype_lr_dispense = ['left_dispense_per_day','right_dispense_per_day']
 
     feddata_threshold_rt = [cri_rt_thres_m, cri_rt_thres_f]
     feddata_datatype_poke = ['rolling_left_poke_%d' % (cri_rol_poke_w_size), 'rolling_right_poke_%d' % (cri_rol_poke_w_size)]
@@ -369,6 +394,10 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
         thres_raw_poke = [0] * (len(feddata_datatype_poke)* (pick_num_day_total))
         # for left right pokes
         thres_raw_lr_poke = [0] * (len(feddata_datatype_lr_poke)*pick_num_day_total )
+        # for left right with pellets
+        thres_raw_lr_with_pellets = [0] * (len(feddata_datatype_lr_with_pellets)*pick_num_day_total ) 
+        # for left right during dispense
+        thres_raw_lr_dispense = [0] * (len(feddata_datatype_lr_dispense)*pick_num_day_total )
 
 
         if mouse_thres_index != -1: # either male or female
@@ -539,6 +568,14 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                     thres_raw_lr_poke[0*pick_num_day_total+feddata_num_day_offset] = feddata_mouse_day[0].leftPokeCount 
                     thres_raw_lr_poke[1*pick_num_day_total+feddata_num_day_offset] = feddata_mouse_day[0].rightPokeCount 
 
+                    # fill into lr with pellets
+                    thres_raw_lr_with_pellets[0*pick_num_day_total+feddata_num_day_offset] = feddata_mouse_day[0].leftWithPelletCount
+                    thres_raw_lr_with_pellets[1*pick_num_day_total+feddata_num_day_offset] = feddata_mouse_day[0].rightWithPelletCount
+
+                    # fill into lr during dispense
+                    thres_raw_lr_dispense[0*pick_num_day_total+feddata_num_day_offset] = feddata_mouse_day[0].leftDuringDispenseCount
+                    thres_raw_lr_dispense[1*pick_num_day_total+feddata_num_day_offset] = feddata_mouse_day[0].rightDuringDispenseCount
+
 
                 # get rolling filter (CumAcc)
                 feddata_rolling_mouse_day = feddata_cohort_rolling.filter(mouse=mouse, fedNumDay=feddata_num_day_index) 
@@ -613,16 +650,19 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
         mouse_data['thres_raw_rt'] = thres_raw_rt
         mouse_data['thres_raw_poke'] = thres_raw_poke
         mouse_data['thres_raw_lr_poke'] = thres_raw_lr_poke
+        mouse_data['thres_raw_lr_with_pellets'] = thres_raw_lr_with_pellets
+        mouse_data['thres_raw_lr_dispense'] = thres_raw_lr_dispense
 
         # append mouse data
         mouse_data_list.append(mouse_data)
 
-    print("between formatting")
+    if DEBUG:
+        print("between formatting")
     ### formating output ###
     final_acq_output_tabs = {}
     final_acq_output_tabs_filtered = {}
     final_metadata = {}
-    for tab_index in range(4):
+    for tab_index in range(5):
         final_acq_output_tabs[tab_index] = []
         final_acq_output_tabs_filtered[tab_index] = []
     final_metadata[0] = []
@@ -647,7 +687,7 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
         filter_count_list.append(mouse_row_filter_count)
 
     # generate the ACQ_TABLE - RT_RAW, ROLLING_POKE, LR_POKE_COUNT tables
-    for type_index in [ACQ_TABLE, NUM_P_DAY, STAB_YES, END_DAY_ACC, MAX10_ROLLING_30, RT_AVG, RT_SEM, RT_PC, RT_RAW, ROLLING_POKE, LR_POKE_COUNT]:
+    for type_index in [ACQ_TABLE, NUM_P_DAY, STAB_YES, END_DAY_ACC, MAX10_ROLLING_30, RT_AVG, RT_SEM, RT_PC, RT_RAW, ROLLING_POKE, LR_POKE_COUNT, LR_WITH_PELLETS, LR_DISPENSE]:
         for mouse in mouse_data_list:
             mouse_row = {}
             mouse_row['mouse_id'] = mouse['mouse_id']
@@ -743,55 +783,66 @@ def cal_acq(cohort_id, time_acq_picker, time_acq_range, cri_num_p_day_m, cri_num
                 if mouse_row_filter_count != 0:
                     final_acq_output_tabs_filtered[2].append(mouse_row_filter)
 
+            # for left and righ poke count
             elif type_index == LR_POKE_COUNT:
-                # left poke count
-                mouse_row['data_type'] = feddata_datatype_lr_poke[0]
-                mouse_row_filter['data_type'] = feddata_datatype_lr_poke[0]
-                mouse_row['threshold'] = "" 
-                mouse_row_filter['threshold'] = ""
-
-                mouse_row_filter_count = 0
-                for day_index in range(pick_num_day_total):
-                    mouse_row[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw_lr_poke'][ 0*pick_num_day_total + day_index] # 0 for left
-
-                    # filter test type
-                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type or test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type+"_X":
-                        mouse_row_filter['s_align'+str(mouse_row_filter_count+1)+""] = mouse['thres_raw_lr_poke'][ 0*pick_num_day_total + day_index]
-                        mouse_row_filter_count += 1
-                # fill missing col
-                max_filter_count = max(filter_count_list)
-                if mouse_row_filter_count > 0 and mouse_row_filter_count != max_filter_count:
-                    for miss_idx in range(mouse_row_filter_count, (max_filter_count-mouse_row_filter_count)+1 ):
-                        mouse_row_filter['s_align'+str(miss_idx+1)+""] = ''
-                # append to output
-                final_acq_output_tabs[1].append(mouse_row)
-                if mouse_row_filter_count != 0:
-                    final_acq_output_tabs_filtered[1].append(mouse_row_filter)
-
                 # dup row for right poke
                 mouse_row_right = copy.deepcopy(mouse_row)
                 mouse_row_right_filter = copy.deepcopy(mouse_row_filter)
 
-                mouse_row_right['data_type'] = feddata_datatype_lr_poke[1]
-                mouse_row_right_filter['data_type'] = feddata_datatype_lr_poke[1]
+                mouse_row_filter_count = fill_mouse_row_day_count( mouse, mouse_row, mouse_row_filter, '', '', feddata_datatype_lr_poke, 'thres_raw_lr_poke', 'left', pick_num_day_total, feddata_day_arr_name, test_type_list, cri_filter_test_type, filter_count_list)
+                
+                # append to output tab 1
+                final_acq_output_tabs[1].append(mouse_row)
+                if mouse_row_filter_count != 0:
+                    final_acq_output_tabs_filtered[1].append(mouse_row_filter)
 
-                mouse_row_filter_count = 0
-                for day_index in range(pick_num_day_total):
-                    mouse_row_right[feddata_day_arr_name[day_index]+" "] = mouse['thres_raw_lr_poke'][ 1*pick_num_day_total + day_index] # 1 for right
+                mouse_row_filter_count = fill_mouse_row_day_count( mouse, mouse_row_right, mouse_row_right_filter, '', '', feddata_datatype_lr_poke, 'thres_raw_lr_poke', 'right', pick_num_day_total, feddata_day_arr_name, test_type_list, cri_filter_test_type, filter_count_list)
 
-                    # filter test type
-                    if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type or test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type+"_X":
-                        mouse_row_right_filter['s_align'+str(mouse_row_filter_count+1)+""] = mouse['thres_raw_lr_poke'][ 1*pick_num_day_total + day_index]
-                        mouse_row_filter_count += 1
-                # fill missing col
-                max_filter_count = max(filter_count_list)
-                if mouse_row_filter_count > 0 and mouse_row_filter_count != max_filter_count:
-                    for miss_idx in range(mouse_row_filter_count, (max_filter_count-mouse_row_filter_count)+1 ):
-                        mouse_row_right_filter['s_align'+str(miss_idx+1)+""] = ''
-                # append to output
+                # append to output tab 1
                 final_acq_output_tabs[1].append(mouse_row_right)
                 if mouse_row_filter_count != 0:
-                    final_acq_output_tabs_filtered[1].appen(mouse_row_right_filter)
+                    final_acq_output_tabs_filtered[1].append(mouse_row_right_filter)
+
+
+            # for left and right with pellets
+            elif type_index == LR_WITH_PELLETS:
+                # dup row for right poke
+                mouse_row_right = copy.deepcopy(mouse_row)
+                mouse_row_right_filter = copy.deepcopy(mouse_row_filter)
+
+                mouse_row_filter_count = fill_mouse_row_day_count( mouse, mouse_row, mouse_row_filter, '', '', feddata_datatype_lr_with_pellets, 'thres_raw_lr_with_pellets', 'left', pick_num_day_total, feddata_day_arr_name, test_type_list, cri_filter_test_type, filter_count_list)
+                
+                # append to output tab 3
+                final_acq_output_tabs[3].append(mouse_row)
+                if mouse_row_filter_count != 0:
+                    final_acq_output_tabs_filtered[3].append(mouse_row_filter)
+
+                mouse_row_filter_count = fill_mouse_row_day_count( mouse, mouse_row_right, mouse_row_right_filter, '', '', feddata_datatype_lr_with_pellets, 'thres_raw_lr_with_pellets', 'right', pick_num_day_total, feddata_day_arr_name, test_type_list, cri_filter_test_type, filter_count_list)
+
+                # append to output tab 3
+                final_acq_output_tabs[3].append(mouse_row_right)
+                if mouse_row_filter_count != 0:
+                    final_acq_output_tabs_filtered[3].append(mouse_row_right_filter)
+
+            # for left and right during dispense
+            elif type_index == LR_DISPENSE:
+                # dup row for right poke
+                mouse_row_right = copy.deepcopy(mouse_row)
+                mouse_row_right_filter = copy.deepcopy(mouse_row_filter)
+
+                mouse_row_filter_count = fill_mouse_row_day_count( mouse, mouse_row, mouse_row_filter, '', '', feddata_datatype_lr_dispense, 'thres_raw_lr_dispense', 'left', pick_num_day_total, feddata_day_arr_name, test_type_list, cri_filter_test_type, filter_count_list)
+                
+                # append to output tab 3
+                final_acq_output_tabs[3].append(mouse_row)
+                if mouse_row_filter_count != 0:
+                    final_acq_output_tabs_filtered[3].append(mouse_row_filter)
+
+                mouse_row_filter_count = fill_mouse_row_day_count( mouse, mouse_row_right, mouse_row_right_filter, '', '', feddata_datatype_lr_dispense, 'thres_raw_lr_dispense', 'right', pick_num_day_total, feddata_day_arr_name, test_type_list, cri_filter_test_type, filter_count_list)
+
+                # append to output tab 3
+                final_acq_output_tabs[3].append(mouse_row_right)
+                if mouse_row_filter_count != 0:
+                    final_acq_output_tabs_filtered[3].append(mouse_row_right_filter)
 
             elif type_index == ROLLING_POKE:
                 # left poke
@@ -1028,3 +1079,33 @@ def cal_rt_of_day(m, fed_day, onset_timestamp):
     rt_raw = ",".join(str(v) for v in rt_list)
 
     return rt_avg, rt_sem, rt_pel, rt_raw
+
+
+def fill_mouse_row_day_count( mouse, mouse_row, mouse_row_filter, threshold_row, threshold_row_filter, feddata_datatype_array, feddata_datatype_name, direction, pick_num_day_total, feddata_day_arr_name, test_type_list, cri_filter_test_type, filter_count_list):
+
+    if direction == 'left':
+        dir_index = 0;
+    else:
+        dir_index = 1;
+
+    mouse_row['threshold'] = threshold_row
+    mouse_row_filter['threshold'] = threshold_row_filter
+
+    mouse_row['data_type'] = feddata_datatype_array[dir_index]
+    mouse_row_filter['data_type'] = feddata_datatype_array[dir_index]
+    
+    mouse_row_filter_count = 0
+    for day_index in range(pick_num_day_total):
+        mouse_row[feddata_day_arr_name[day_index]+" "] = mouse[ feddata_datatype_name ][ dir_index*pick_num_day_total + day_index] # 0 for left
+
+        # filter test type
+        if test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type or test_type_list[mouse['mouse_id']][feddata_day_arr_name[day_index]] == cri_filter_test_type+"_X":
+            mouse_row_filter['s_align'+str(mouse_row_filter_count+1)+""] = mouse[ feddata_datatype_name ][ dir_index*pick_num_day_total + day_index]
+            mouse_row_filter_count += 1
+
+        # fill missing col
+        max_filter_count = max(filter_count_list)
+        if mouse_row_filter_count > 0 and mouse_row_filter_count != max_filter_count:
+            for miss_idx in range(mouse_row_filter_count, (max_filter_count-mouse_row_filter_count)+1 ):
+                mouse_row_filter['s_align'+str(miss_idx+1)+""] = ''
+    return mouse_row_filter_count

@@ -3,6 +3,7 @@
 
     <router-link to="/">Home</router-link>
     <router-link to="/edit">Edit</router-link>
+    <router-link to="/release">Release</router-link>
     <router-view></router-view>
 
   </div>
