@@ -235,7 +235,7 @@
         </div>
 
         <footer class="footer">
-          <p>&copy; 2024 Fed Database v1.0.1-alpha. If there are any issues, please contact chinhui@vt.edu.</p>
+          <p>&copy; 2024 Fed Database v1.0.2-alpha. If there are any issues, please contact chinhui@vt.edu.</p>
         </footer>
 
     </div>

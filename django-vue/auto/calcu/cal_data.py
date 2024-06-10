@@ -1054,20 +1054,21 @@ def cal_rt_of_day(m, fed_day, onset_timestamp):
 
     rt_list = []
     rt_pel = 0
-    rt_pc_pre = 0
+    #rt_pc_pre = 0
     for i_q in range(len(qs_hr_rt)):
         # insert into rt table
         feddayrt = FedDataByRT(actTimestamp=qs_hr_rt[i_q].actTimestamp, retrievalTime=qs_hr_rt[i_q].retrievalTime, pelletCount=qs_hr_rt[i_q].pelletCount, fedDate=qs_hr_rt[i_q].actTimestamp.date(), fedNumDay=fed_day, mouse=m)
         feddayrt.save()
 
         # deal with nan value pellet retrieval
-        if qs_hr_rt[i_q].pelletCount - rt_pc_pre != 1: # miss nan, fill with 0
-            rt_list.append(0)
+        #if qs_hr_rt[i_q].pelletCount - rt_pc_pre != 1: # miss nan, fill with 0
+        #    rt_list.append(0)
 
         rt_list.append( qs_hr_rt[i_q].retrievalTime )
-        rt_pel = qs_hr_rt[i_q].pelletCount
+        #rt_pel = qs_hr_rt[i_q].pelletCount
+        #rt_pc_pre = qs_hr_rt[i_q].pelletCount
+        rt_pel  = len(rt_list)
 
-        rt_pc_pre = qs_hr_rt[i_q].pelletCount
     # mean and sem 
     rt_np_arr = np.array(rt_list)
     rt_sem = round(np.std(rt_np_arr, ddof=1) / np.sqrt(np.size(rt_np_arr)), 4)

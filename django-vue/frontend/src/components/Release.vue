@@ -4,6 +4,22 @@
         <div class="release-note">
             <p>Release Note: Fed Database v1</p>
         <table>
+
+            <tr>
+                <th>Date</th>
+                <td>06/09/2024</td>
+            </tr>
+            <tr>
+                <th>Version</th>
+                <td>v1.0.2-alpha</td>
+            </tr>
+            <tr>
+                <th>Fix</th>
+                <td>Pellet Timed_Out is excluded from the rt_pellet_count.</td>
+            </tr>
+
+<br>
+
             <tr>
                 <th>Date</th>
                 <td>05/28/2024</td>
@@ -17,6 +33,7 @@
                 <td>Add left or right with pellets and during dispense to a new Excel tab (Tab: All_Data4)</td>
             </tr>
         </table>
+
         </div>
     </div>
 </template>
