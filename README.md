@@ -51,13 +51,21 @@ Before you begin, ensure you have the following installed:
    - `source django-vue/bin/activate`
 
 3. **Install django dependency** 
-   - install pip from https://pip.pypa.io/en/stable/installation/ 
+   - install pip
+   - `curl -O https://bootstrap.pypa.io/get-pip.py`
+   - `python get-pip.py`
+
+   - install django
    - `python -m pip install django;`
-   - `pip install django-extensions`
-   - `pip install djangorestframework`
-   - `pip install pymysql`
-   - `pip install django-cors-headers`
-   - `pip install mysqlclient`
+   - `python -m pip install django-extensions`
+   - `python -m pip install djangorestframework`
+   - `python -m pip install pymysql`
+   - `python -m pip install django-cors-headers`
+   - `python -m pip install pandas`
+
+   - install mysql client
+   - `sudo apt install default-libmysqlclient-dev build-essential pkg-config`
+   - `python -m pip install mysqlclient`
 
 4. **Initialize Database**
    - `cd django-vue`
@@ -65,7 +73,7 @@ Before you begin, ensure you have the following installed:
    - `python manage.py migrate`
 
 5. **Run the Backend Server**
-   - `python3 manage.py runserver 0.0.0.0:3000`
+   - `python manage.py runserver 0.0.0.0:3000`
 
 ### Vue.js Frontend Setup
 
@@ -73,6 +81,7 @@ Before you begin, ensure you have the following installed:
    - `cd frontend`
 
 2. **Install Node Modules**
+   - `sudo apt install npm`
    - `npm install webpack-dev-server`
    - `npm install --save xlsx`
    - `npm install` 
