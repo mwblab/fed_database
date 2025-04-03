@@ -86,7 +86,7 @@ Before you begin, ensure you have the following installed:
    - `npm install --save xlsx`
    - `npm install` 
 
-3. **Update backend IP
+3. **Update backend IP**
    - `cd config`
    - `node update_backend_config.js`
    - type backend IP in the prompt
