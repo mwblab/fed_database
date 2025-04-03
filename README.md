@@ -77,7 +77,12 @@ Before you begin, ensure you have the following installed:
    - `npm install --save xlsx`
    - `npm install` 
 
-3. **Run the Vue.js Frontend Server**
+3. **Update backend IP
+   - `cd config`
+   - `node update_backend_config.js`
+   - type backend IP in the prompt
+
+4. **Run the Vue.js Frontend Server**
    - Edit port and host IP in config/index.js file.
    - run server
    - `npm run dev`
