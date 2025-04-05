@@ -7,6 +7,21 @@
 
             <tr>
                 <th>Date</th>
+                <td>04/04/2025</td>
+            </tr>
+            <tr>
+                <th>Version</th>
+                <td>v1.0.3-alpha</td>
+            </tr>
+            <tr>
+                <th>Feature</th>
+                <td>1. On the edit page, prefill files can be uploaded to add the desired mouse data before uploading other files. <br> 2. Mouse's FED NAME can be editted now</td>
+            </tr>
+
+<br>
+
+            <tr>
+                <th>Date</th>
                 <td>06/09/2024</td>
             </tr>
             <tr>

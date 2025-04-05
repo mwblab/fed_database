@@ -14,7 +14,8 @@
             </b-row>
             <b-row align-h="center" v-if="this.selectedOption > 0">
                 <b-col sm="4" class="mt-3">
-                    Upload Prefill File<input type="file" @change="handlePrefillFileUpload($event)" />
+                    <input type="file" @change="handlePrefillFileUpload($event)" />
+                    <br> Upload Prefill File
                     <b-button id="upload_doc" pill :pressed="true" variant="outline-info">Upload Format</b-button>
                     <b-popover target="upload_doc" triggers="hover">
                     <template #title>Excel .xlsx file</template>
