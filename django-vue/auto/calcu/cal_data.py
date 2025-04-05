@@ -1,4 +1,4 @@
-from auto.models import Mouse, FedDataRaw, FedDataByHour, FedDataByDay, Cohort, FedDataRolling, FedDataTestType, FedDataByRT, FedDataRollingPoke
+from auto.models import Fed, Mouse, FedDataRaw, FedDataByHour, FedDataByDay, Cohort, FedDataRolling, FedDataTestType, FedDataByRT, FedDataRollingPoke
 from datetime import datetime, date, timedelta
 from django.utils import timezone
 from django.db.models import Avg, F, RowRange, Window, Max, Sum
@@ -1017,6 +1017,11 @@ def put_mouse_list_fun(mouse_list):
         mouse_inst.genotype = mouse['mouse_genotype']
         mouse_inst.sex = mouse['mouse_sex']
         mouse_inst.save()
+        # update fed name
+        fed_obj = Fed.objects.filter(id=mouse_inst.fed_id)
+        fed_inst = get_object_or_404(fed_obj)
+        fed_inst.fedDisplayName = mouse['mouse_FED']
+        fed_inst.save()
 
     return []
 

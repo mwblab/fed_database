@@ -110,7 +110,7 @@ export default {
       mouse_list: [],
       fields: [
         { key: 'mouse_id', label: 'ID' },
-        { key: 'mouse_FED', label: 'FED' },
+        { key: 'mouse_FED', label: 'FED', editable: true },
         { key: 'mouse_name', label: 'Mouse Name', editable: true },
         { key: 'mouse_sex', label: 'Sex', editable: true },
         { key: 'mouse_genotype', label: 'Genotype', editable: true },
