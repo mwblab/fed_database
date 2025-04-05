@@ -14,6 +14,7 @@ urlpatterns = [
         path('auto/del_cohort/', views.del_cohort),
         path('auto/get_mouse_list/', views.get_mouse_list),
         path('auto/put_mouse_list/', views.put_mouse_list),
-        path('auto/del_mouse_data/', views.del_mouse_data)
+        path('auto/del_mouse_data/', views.del_mouse_data),
+        path('auto/upload_prefill_file/', views.upload_prefill_file)
 
 ]

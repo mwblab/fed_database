@@ -11,6 +11,10 @@ from .serializers import TaskSerializer
 from .models import Study
 from auto.calcu import load_raw_data, cal_data
 import os, sys
+import openpyxl
+from auto.models import Mouse, FedDataRaw, Fed, FedDataTestType
+from django.utils import timezone
+from datetime import datetime, timedelta
 
 @csrf_exempt
 def studies(request):
@@ -215,4 +219,66 @@ def del_mouse_data(request):
             print(e)
             return JsonResponse({'error':str(e)}, safe=False, status=400) 
 
+# upload prefill file
+@csrf_exempt
+def upload_prefill_file(request): 
+    if(request.method == 'POST'):
+        try:
+            error_msg_all = ''
 
+            uploaded_file = request.FILES.get('fileList')  # matches FormData key
+            cohort_id = request.POST.get('cId')
+            #print("cohort id:", c_id)
+            #print("prefill file:", uploaded_file)
+            prefill_content = uploaded_file.read()
+            
+            # parse file content
+            wb = openpyxl.load_workbook(uploaded_file)
+            sheet = wb.active
+            # skip header
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                fed_id = row[0]
+                mouse_name = row[1]
+                mouse_sex = row[2]
+                mouse_genotype = row[3]
+                # create a new mouse if not exists in c_id
+                try:
+                    ret_fed = Fed.objects.get(fedDisplayName = "%s" % fed_id, cohort_id = cohort_id)
+                    ret_mouse = Mouse.objects.get(fed=ret_fed)
+
+                    # if fed and mouse exist, update mouse info
+                    ret_mouse.mouseDisplayName = mouse_name
+                    ret_mouse.genotype = mouse_genotype
+                    ret_mouse.sex = mouse_sex
+                    ret_mouse.save()
+
+                except Fed.DoesNotExist as err: 
+                    # insert new fed and ini new mouse
+                    # what if new cohort?
+                    new_fed = Fed(cohort_id = cohort_id, fedDisplayName = "%s" % fed_id)
+                    new_fed.save()
+
+                    new_mouse = Mouse( mouseDisplayName=mouse_name, sex=mouse_sex, genotype=mouse_genotype, fed=new_fed, dob=timezone.make_aware(datetime.now()) )
+                    new_mouse.save()
+                except Mouse.DoesNotExist as err:
+                    new_mouse = Mouse( mouseDisplayName=mouse_name, sex=mouse_sex, genotype=mouse_genotype, fed=ret_fed, dob=timezone.make_aware(datetime.now()) )
+                    new_mouse.save()
+                except Exception as err:
+                    print(f"Unexpected {err=}, {type(err)=}")
+                    raise
+        except Exception as e:
+            # save error msg
+            error_msg_all += os.path.basename(uploaded_file) + ": "
+            error_msg_all += str(e) + "\n"
+            pass
+
+    if error_msg_all != '':
+        e_data = {
+            'error': 'Upload pre-fill files failure',
+            'message': '%s' % (error_msg_all)
+            }
+        return JsonResponse(e_data, status=400)
+    else:
+        return HttpResponse(status=201) 
+    
